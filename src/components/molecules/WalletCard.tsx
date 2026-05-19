@@ -1,5 +1,4 @@
 import { type Wallet } from "@/db/db";
-import { BrutalBadge } from "@/components/atoms/BrutalBadge";
 import { cn } from "@/lib/utils";
 
 // ─── Color map for wallet colorClass ─────────────────────────────────────────
@@ -62,7 +61,7 @@ export function WalletCard({ wallet, compact = false, onClick }: WalletCardProps
             {formatBalance(wallet.balance, wallet.currency)}
           </p>
         </div>
-        <BrutalBadge variant="currency">{wallet.currency}</BrutalBadge>
+        {/* <BrutalBadge variant="currency">{wallet.currency}</BrutalBadge> */}
       </div>
     );
   }
@@ -84,7 +83,7 @@ export function WalletCard({ wallet, compact = false, onClick }: WalletCardProps
           </span>
           <h3 className="text-lg font-black truncate">{wallet.name}</h3>
         </div>
-        <BrutalBadge variant="currency">{wallet.currency}</BrutalBadge>
+        {/* <BrutalBadge variant="currency">{wallet.currency}</BrutalBadge> */}
       </div>
 
       {/* Balance */}

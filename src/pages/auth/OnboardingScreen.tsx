@@ -70,14 +70,15 @@ export function OnboardingScreen() {
 
         {/* App Logo / Brand Mark */}
         <div className="mb-10 flex flex-col items-center gap-3">
-          <div
+          {/* <div
             className={cn(
               "flex h-20 w-20 items-center justify-center",
               "border-4 border-brutal-black bg-brutal-lime shadow-brutal-xl"
             )}
           >
             <Wallet size={40} strokeWidth={2.5} />
-          </div>
+          </div> */}
+          <img src="/logo.png" alt="Kanti Arta Logo" className="h-20 w-auto" />
           <div className="text-center">
             <h1 className="text-4xl font-black uppercase tracking-tighter leading-none">
               Kanti Arta
