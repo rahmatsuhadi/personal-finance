@@ -80,7 +80,7 @@ export function OnboardingScreen() {
           </div>
           <div className="text-center">
             <h1 className="text-4xl font-black uppercase tracking-tighter leading-none">
-              FINANCE
+              Kanti Arta
             </h1>
             <p className="text-sm font-bold uppercase tracking-[0.3em] opacity-60 mt-1">
               Pelacak Keuangan Pribadi

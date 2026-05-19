@@ -3,18 +3,13 @@ import { useStack } from "@/navigation/StackNavigator";
 import { AppHeader } from "@/components/atoms/AppHeader";
 import { db } from "@/db/db";
 import { cn } from "@/lib/utils";
-import { Send, Sparkles, Bot } from "lucide-react";
+import { Send, Sparkles, } from "lucide-react";
 import { format, startOfMonth, endOfMonth } from "date-fns";
 import { id as idLocale } from "date-fns/locale";
-
-// ─── Types ─────────────────────────────────────────────────────────────────────
-
-interface Message {
-  id: string;
-  role: "user" | "ai";
-  content: string;
-  timestamp: Date;
-}
+import MessageBubble from "@/components/molecules/chat-ai/MessageBubble";
+import TypingIndicator from "@/components/molecules/chat-ai/TypingIndicator";
+import { parseTransactionQuery } from "@/utlis/aiParser";
+import type { Message, } from "@/types";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -163,6 +158,26 @@ async function generateResponse(query: string): Promise<string> {
   return `🤔 Hmm, aku belum paham pertanyaan itu. Coba tanya:\n\n• "Berapa transaksi hari ini?"\n• "Total saldo dompetku"\n• "Pengeluaran bulan ini"\n• "Pemasukan bulan ini"\n• "Pengeluaran terbesar"\n• "Tips hemat uang"`;
 }
 
+async function generateAiResponseExtended(query: string): Promise<{ text: string; metadata?: any }> {
+  const parsed = parseTransactionQuery(query);
+
+  // Jika terdeteksi ini adalah input pencatatan transaksional
+  if (parsed && parsed.amount > 0) {
+    return {
+      text: `Aku mendeteksi kamu ingin mencatat transaksi baru. Harap konfirmasi detail di bawah ini ya!`,
+      metadata: {
+        type: "transaction_confirmation",
+        data: parsed,
+        isApproved: false
+      }
+    };
+  }
+
+  // Jika bukan pencatatan, fallback ke Dummy AI Engine bawaan kamu yang lama
+  const text = await generateResponse(query);
+  return { text };
+}
+
 // ─── Recommended Prompts ──────────────────────────────────────────────────────
 
 const RECOMMENDED_PROMPTS = [
@@ -174,80 +189,6 @@ const RECOMMENDED_PROMPTS = [
   "Tips hemat uang",
 ];
 
-// ─── Message Bubble ───────────────────────────────────────────────────────────
-
-function MessageBubble({ msg }: { msg: Message }) {
-  const isUser = msg.role === "user";
-
-  // Render markdown-like bold (**text**)
-  const renderContent = (content: string) => {
-    return content.split("\n").map((line, i) => {
-      const parts = line.split(/\*\*(.+?)\*\*/g);
-      return (
-        <p key={i} className={i > 0 ? "mt-1" : ""}>
-          {parts.map((part, j) =>
-            j % 2 === 1 ? <strong key={j}>{part}</strong> : part
-          )}
-        </p>
-      );
-    });
-  };
-
-  return (
-    <div
-      className={cn(
-        "flex gap-2 px-4",
-        isUser ? "flex-row-reverse" : "flex-row"
-      )}
-    >
-      {/* Avatar */}
-      {!isUser && (
-        <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center border-2 border-brutal-black bg-brutal-purple mt-1">
-          <Bot size={14} strokeWidth={2.5} className="text-white" />
-        </div>
-      )}
-
-      {/* Bubble */}
-      <div
-        className={cn(
-          "max-w-[80%] border-2 border-brutal-black px-4 py-3",
-          "text-sm font-medium leading-relaxed",
-          isUser
-            ? "bg-brutal-lime shadow-brutal-sm text-brutal-black"
-            : "bg-brutal-white shadow-brutal-sm text-brutal-black"
-        )}
-      >
-        {renderContent(msg.content)}
-        <p className="text-[10px] font-bold opacity-40 mt-1.5">
-          {format(msg.timestamp, "HH:mm")}
-        </p>
-      </div>
-    </div>
-  );
-}
-
-// ─── Typing Indicator ─────────────────────────────────────────────────────────
-
-function TypingIndicator() {
-  return (
-    <div className="flex gap-2 px-4">
-      <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center border-2 border-brutal-black bg-brutal-purple">
-        <Bot size={14} strokeWidth={2.5} className="text-white" />
-      </div>
-      <div className="border-2 border-brutal-black bg-brutal-white px-4 py-3 shadow-brutal-sm flex items-center gap-1.5">
-        {[0, 1, 2].map((i) => (
-          <div
-            key={i}
-            className="h-2 w-2 bg-brutal-purple border border-brutal-black"
-            style={{
-              animation: `bounce 1.2s ease-in-out ${i * 0.2}s infinite`,
-            }}
-          />
-        ))}
-      </div>
-    </div>
-  );
-}
 
 // ─── AIChatbotScreen ──────────────────────────────────────────────────────────
 
@@ -290,12 +231,13 @@ export function AIChatbotScreen() {
     const delay = 800 + Math.random() * 800;
     await new Promise((r) => setTimeout(r, delay));
 
-    const responseText = await generateResponse(text);
+    const responseText = await generateAiResponseExtended(text);
 
     const aiMsg: Message = {
       id: mkId(),
       role: "ai",
-      content: responseText,
+      content: responseText.text,
+      metadata: responseText.metadata,
       timestamp: new Date(),
     };
 
@@ -313,6 +255,7 @@ export function AIChatbotScreen() {
       handleSend();
     }
   }
+
 
   return (
     <div
