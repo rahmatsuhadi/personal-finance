@@ -113,7 +113,7 @@ function DayDrawer({
         )}
       >
         {/* Header */}
-        <div className="flex items-center border-b-2 border-brutal-black px-4 py-3 flex-shrink-0">
+        <div className="flex items-center border-b-2 border-brutal-black px-4 py-3 shrink-0">
           <button
             onClick={onPrevDay}
             className="flex h-8 w-8 items-center justify-center border-2 border-brutal-black bg-brutal-white shadow-brutal-sm brutal-press mr-2"
@@ -139,7 +139,7 @@ function DayDrawer({
 
         {/* Summary strip */}
         {transactions.length > 0 && (
-          <div className="flex border-b-2 border-brutal-black divide-x-2 divide-brutal-black flex-shrink-0">
+          <div className="flex border-b-2 border-brutal-black divide-x-2 divide-brutal-black shrink-0">
             <div className="flex-1 p-2 text-center bg-brutal-emerald">
               <p className="text-[10px] font-bold uppercase">Masuk</p>
               <p className="text-xs font-black">{formatIDR(income)}</p>
@@ -170,7 +170,7 @@ function DayDrawer({
                   >
                     <span
                       className={cn(
-                        "flex h-8 w-8 flex-shrink-0 items-center justify-center text-sm font-black border-2 border-brutal-black",
+                        "flex h-8 w-8 shrink-0 items-center justify-center text-sm font-black border-2 border-brutal-black",
                         tx.type === "income" && "bg-brutal-emerald",
                         tx.type === "expense" && "bg-brutal-rose",
                         tx.type === "transfer" && "bg-brutal-cyan"
@@ -182,7 +182,7 @@ function DayDrawer({
                       <p className="text-sm font-bold truncate">{tx.description}</p>
                       <p className="text-[10px] text-brutal-black/50">{tx.category}</p>
                     </div>
-                    <p className={cn("text-sm font-black flex-shrink-0", TYPE_TEXT_COLOR[tx.type])}>
+                    <p className={cn("text-sm font-black shrink-0", TYPE_TEXT_COLOR[tx.type])}>
                       {tx.type === "income" ? "+" : tx.type === "expense" ? "-" : ""}
                       {formatIDR(tx.amount)}
                     </p>
@@ -304,7 +304,7 @@ export function CalendarScreen() {
       </div>
 
       {/* Calendar Grid */}
-      <div className="grid grid-cols-7 border-b-2 border-brutal-black flex-shrink-0">
+      <div className="grid grid-cols-7 border-b-2 border-brutal-black shrink-0">
         {days.map((day, i) => {
           const dateStr = toDateStr(day);
           const isToday = isSameDay(day, today);
@@ -319,7 +319,7 @@ export function CalendarScreen() {
               onClick={() => inMonth && setSelectedDate(day)}
               className={cn(
                 "relative flex flex-col items-center pt-1.5 pb-1",
-                "h-[72px] border-r-2 border-b-2 border-brutal-black",
+                "h-18 border-r-2 border-b-2 border-brutal-black",
                 i % 7 === 6 && "border-r-0",
                 // Background colors
                 isSelected && "bg-brutal-yellow",
@@ -379,7 +379,7 @@ export function CalendarScreen() {
       </div>
 
       {/* Legend */}
-      <div className="flex gap-4 px-4 py-2 border-b-2 border-brutal-black bg-brutal-bg flex-shrink-0">
+      <div className="flex gap-4 px-4 py-2 border-b-2 border-brutal-black bg-brutal-bg shrink-0">
         <div className="flex items-center gap-1.5">
           <div className="h-3 w-3 border border-blue-700 bg-blue-500" />
           <span className="text-[10px] font-bold uppercase">Pemasukan</span>

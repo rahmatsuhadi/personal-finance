@@ -279,7 +279,7 @@ export function HomeScreen() {
           </div>
           <div className="flex gap-3 overflow-x-auto px-4 py-3 no-scrollbar">
             {wallets.map((wallet) => (
-              <div key={wallet.id} className="w-48 flex-shrink-0">
+              <div key={wallet.id} className="w-48 shrink-0">
                 <WalletCard wallet={wallet} compact />
               </div>
             ))}

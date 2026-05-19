@@ -31,7 +31,7 @@ function formatDate(dateStr: string): string {
 function DetailRow({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex items-start justify-between gap-4 py-3 border-b-2 border-brutal-black last:border-b-0">
-      <span className="text-xs font-bold uppercase tracking-wider text-brutal-black/50 flex-shrink-0 w-32">
+      <span className="text-xs font-bold uppercase tracking-wider text-brutal-black/50 shrink-0 w-32">
         {label}
       </span>
       <span className="text-sm font-bold text-right flex-1">{value}</span>
