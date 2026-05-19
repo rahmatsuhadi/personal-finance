@@ -1,5 +1,4 @@
 import { type Transaction } from "@/db/db";
-import { BrutalBadge } from "@/components/atoms/BrutalBadge";
 import { cn } from "@/lib/utils";
 import { ArrowDownLeft, ArrowUpRight, ArrowLeftRight } from "lucide-react";
 

@@ -207,7 +207,7 @@ export function HomeScreen() {
               Selamat Datang,
             </p>
             <h1 className="text-2xl font-black text-white leading-tight">
-              {firstName} 👋
+              {firstName} 
             </h1>
           </div>
           {/* Action buttons: Chatbot + Filter */}

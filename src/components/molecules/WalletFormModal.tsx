@@ -86,10 +86,10 @@ export function WalletFormModal({
 
   return (
     <>
-      <div className="fixed inset-0 z-40 bg-brutal-black/60" onClick={handleClose} />
+      <div className="fixed inset-0 z-40 bg-brutal-black/60 " onClick={handleClose} />
       <div
         className={cn(
-          "fixed bottom-0 left-0 right-0 z-50",
+          "fixed bottom-15 left-0 right-0 z-50",
           "border-t-4 border-brutal-black bg-brutal-bg",
           "pb-[calc(var(--safe-bottom)+16px)]",
           "animate-in slide-in-from-bottom duration-200"

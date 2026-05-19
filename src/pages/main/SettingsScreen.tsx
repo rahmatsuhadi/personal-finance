@@ -6,7 +6,6 @@ import { WalletFormModal } from "@/components/molecules/WalletFormModal";
 import { ConfirmModal } from "@/components/atoms/ConfirmModal";
 import { BrutalButton } from "@/components/atoms/BrutalButton";
 import { BrutalBadge } from "@/components/atoms/BrutalBadge";
-import { cn } from "@/lib/utils";
 import { User, LogOut, Wallet, Plus, Trash2, Pencil } from "lucide-react";
 import type { Wallet as WalletType } from "@/db/db";
 

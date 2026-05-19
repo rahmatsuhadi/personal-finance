@@ -4,7 +4,7 @@ import { AppHeader } from "@/components/atoms/AppHeader";
 import { db } from "@/db/db";
 import { cn } from "@/lib/utils";
 import { Send, Sparkles, Bot } from "lucide-react";
-import { format, startOfDay, endOfDay, startOfMonth, endOfMonth } from "date-fns";
+import { format, startOfMonth, endOfMonth } from "date-fns";
 import { id as idLocale } from "date-fns/locale";
 
 // ─── Types ─────────────────────────────────────────────────────────────────────

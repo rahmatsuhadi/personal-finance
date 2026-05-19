@@ -14,7 +14,7 @@ export const walletRepository = {
   /**
    * Add a new wallet
    */
-  async add(wallet: Omit<Wallet, "id">): Promise<number> {
+  async add(wallet: Omit<Wallet, "id">){
     return db.wallets.add(wallet);
   },
 

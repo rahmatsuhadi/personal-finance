@@ -25,7 +25,7 @@ export const transactionRepository = {
   /**
    * Add a new transaction
    */
-  async add(transaction: Omit<Transaction, "id">): Promise<number> {
+  async add(transaction: Omit<Transaction, "id">) {
     return db.transactions.add(transaction);
   },
 
