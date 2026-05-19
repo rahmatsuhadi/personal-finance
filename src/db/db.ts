@@ -116,7 +116,7 @@ export async function seedDefaultData() {
   if (walletCount === 0) {
     await db.wallets.bulkAdd([
       { name: "Kas", currency: "IDR", colorClass: "brutal-lime", balance: 0 },
-      { name: "Bank BCA", currency: "IDR", colorClass: "brutal-cyan", balance: 0 },
+      // { name: "Bank BCA", currency: "IDR", colorClass: "brutal-cyan", balance: 0 },
     ]);
   }
 }
