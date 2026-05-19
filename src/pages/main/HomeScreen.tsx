@@ -7,6 +7,9 @@ import { WalletCard } from "@/components/molecules/WalletCard";
 import { BrutalButton } from "@/components/atoms/BrutalButton";
 import { SlidersHorizontal, TrendingUp, TrendingDown, Wallet } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useStack } from "@/navigation/StackNavigator";
+import { TransactionDetailScreen } from "@/pages/main/TransactionDetailScreen";
+import { type Transaction } from "@/db/db";
 
 // ─── Format currency ──────────────────────────────────────────────────────────
 
@@ -173,6 +176,7 @@ function MetricCard({ label, value, icon: Icon, bgColor }: MetricCardProps) {
 export function HomeScreen() {
   const { user } = useAuth();
   const { wallets, totalBalance, incomeTotal, expenseTotal } = useWallets();
+  const { push } = useStack();
   const [filterType, setFilterType] = useState<FilterType>("all");
   const [filterPeriod, setFilterPeriod] = useState<FilterPeriod>("month");
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -180,6 +184,10 @@ export function HomeScreen() {
   const { grouped } = useTransactions(filterType, filterPeriod);
 
   const firstName = user?.name?.split(" ")[0] ?? "Kamu";
+
+  function handleTransactionClick(tx: Transaction) {
+    push(<TransactionDetailScreen transaction={tx} />);
+  }
 
   return (
     <div className="flex flex-col min-h-full bg-brutal-bg pb-20">
@@ -298,6 +306,7 @@ export function HomeScreen() {
                 key={group.date}
                 label={group.label}
                 items={group.items}
+                onItemClick={handleTransactionClick}
               />
             ))}
           </div>
