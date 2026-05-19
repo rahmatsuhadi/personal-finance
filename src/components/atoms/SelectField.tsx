@@ -64,14 +64,14 @@ export function SelectField({
         {/* Accent Color Strip */}
         {accentColor && (
           <div
-            className="h-6 w-1.5 flex-shrink-0 border border-brutal-black"
+            className="h-6 w-1.5 shrink-0 border border-brutal-black"
             style={{ backgroundColor: accentColor }}
           />
         )}
 
         {/* Leading slot */}
         {leading && (
-          <span className="flex-shrink-0 text-brutal-black/50">{leading}</span>
+          <span className="shrink-0 text-brutal-black/50">{leading}</span>
         )}
 
         {/* Value or Placeholder */}
@@ -99,7 +99,7 @@ export function SelectField({
         <ChevronRight
           size={16}
           strokeWidth={2.5}
-          className="flex-shrink-0 text-brutal-black/40"
+          className="shrink-0 text-brutal-black/40"
         />
       </button>
 

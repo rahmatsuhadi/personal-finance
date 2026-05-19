@@ -63,7 +63,7 @@ export function TransactionItem({ transaction, onClick }: TransactionItemProps) 
       {/* Icon */}
       <div
         className={cn(
-          "flex h-10 w-10 flex-shrink-0 items-center justify-center",
+          "flex h-10 w-10 shrink-0 items-center justify-center",
           "border-2 border-brutal-black",
           config.iconBg
         )}
@@ -82,7 +82,7 @@ export function TransactionItem({ transaction, onClick }: TransactionItemProps) 
       </div>
 
       {/* Amount */}
-      <div className="text-right flex-shrink-0">
+      <div className="text-right shrink-0">
         <p className={cn("text-sm font-black", config.amountColor)}>
           {formatAmount(transaction.amount, transaction.type)}
         </p>

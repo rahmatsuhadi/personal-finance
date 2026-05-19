@@ -36,7 +36,7 @@ export function AppHeader({
         <button
           onClick={onBack}
           className={cn(
-            "flex h-10 w-10 flex-shrink-0 items-center justify-center",
+            "flex h-10 w-10 shrink-0 items-center justify-center",
             "border-2 border-brutal-lime bg-transparent",
             "shadow-brutal-sm brutal-press"
           )}
@@ -52,7 +52,7 @@ export function AppHeader({
       </h1>
 
       {/* Optional right action */}
-      {action && <div className="flex-shrink-0">{action}</div>}
+      {action && <div className="shrink-0">{action}</div>}
     </div>
   );
 }

@@ -301,7 +301,7 @@ export function AIChatbotScreen() {
               key={prompt}
               onClick={() => sendMessage(prompt)}
               className={cn(
-                "flex-shrink-0 border-2 border-brutal-black bg-brutal-white px-3 py-2",
+                "shrink-0 border-2 border-brutal-black bg-brutal-white px-3 py-2",
                 "text-xs font-bold brutal-press shadow-brutal-sm whitespace-nowrap"
               )}
             >
@@ -328,7 +328,7 @@ export function AIChatbotScreen() {
             "flex-1 border-2 border-brutal-black bg-brutal-white px-4 py-3",
             "text-sm font-medium placeholder:text-brutal-black/40",
             "shadow-brutal-sm outline-none",
-            "focus:shadow-none focus:translate-x-[2px] focus:translate-y-[2px] transition-all duration-75",
+            "focus:shadow-none focus:translate-x-0.5 focus:translate-y-0.5 transition-all duration-75",
             isTyping && "opacity-50"
           )}
         />
@@ -336,7 +336,7 @@ export function AIChatbotScreen() {
           onClick={handleSend}
           disabled={!input.trim() || isTyping}
           className={cn(
-            "flex h-12 w-12 flex-shrink-0 items-center justify-center",
+            "flex h-12 w-12 shrink-0 items-center justify-center",
             "border-2 border-brutal-black shadow-brutal-sm brutal-press",
             input.trim() && !isTyping
               ? "bg-brutal-purple"

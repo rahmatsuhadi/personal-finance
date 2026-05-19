@@ -114,12 +114,12 @@ export function SelectPickerScreen({
                     {/* Accent color strip / prefix */}
                     {option.accentColor && (
                       <div
-                        className="h-10 w-2 flex-shrink-0 border-2 border-brutal-black"
+                        className="h-10 w-2 shrink-0 border-2 border-brutal-black"
                         style={{ backgroundColor: option.accentColor }}
                       />
                     )}
                     {option.prefix && (
-                      <span className="text-xl flex-shrink-0">
+                      <span className="text-xl shrink-0">
                         {option.prefix}
                       </span>
                     )}
@@ -150,7 +150,7 @@ export function SelectPickerScreen({
 
                     {/* Checkmark if selected */}
                     {isSelected && (
-                      <div className="flex h-7 w-7 flex-shrink-0 items-center justify-center border-2 border-brutal-lime bg-brutal-lime">
+                      <div className="flex h-7 w-7 shrink-0 items-center justify-center border-2 border-brutal-lime bg-brutal-lime">
                         <Check
                           size={14}
                           strokeWidth={3}

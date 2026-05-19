@@ -75,9 +75,9 @@ export function ConfirmModal({
           )}
         >
           {variant === "danger" ? (
-            <Trash2 size={20} strokeWidth={2.5} className="flex-shrink-0" />
+            <Trash2 size={20} strokeWidth={2.5} className="shrink-0" />
           ) : (
-            <AlertTriangle size={20} strokeWidth={2.5} className="flex-shrink-0" />
+            <AlertTriangle size={20} strokeWidth={2.5} className="shrink-0" />
           )}
           <h2
             id="confirm-title"
@@ -87,7 +87,7 @@ export function ConfirmModal({
           </h2>
           <button
             onClick={onCancel}
-            className="flex h-7 w-7 flex-shrink-0 items-center justify-center border-2 border-brutal-black bg-brutal-white/80 brutal-press"
+            className="flex h-7 w-7 shrink-0 items-center justify-center border-2 border-brutal-black bg-brutal-white/80 brutal-press"
           >
             <X size={13} strokeWidth={2.5} />
           </button>
