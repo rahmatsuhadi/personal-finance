@@ -5,10 +5,11 @@ import { useTransactions, type FilterType, type FilterPeriod } from "@/hooks/use
 import { TransactionGroup } from "@/components/molecules/TransactionItem";
 import { WalletCard } from "@/components/molecules/WalletCard";
 import { BrutalButton } from "@/components/atoms/BrutalButton";
-import { SlidersHorizontal, TrendingUp, TrendingDown, Wallet } from "lucide-react";
+import { SlidersHorizontal, TrendingUp, TrendingDown, Wallet, Sparkles } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useStack } from "@/navigation/StackNavigator";
 import { TransactionDetailScreen } from "@/pages/main/TransactionDetailScreen";
+import { AIChatbotScreen } from "@/pages/main/AIChatbotScreen";
 import { type Transaction } from "@/db/db";
 
 // ─── Format currency ──────────────────────────────────────────────────────────
@@ -209,18 +210,35 @@ export function HomeScreen() {
               {firstName} 👋
             </h1>
           </div>
-          {/* Filter trigger */}
-          <button
-            id="home-filter-btn"
-            onClick={() => setDrawerOpen(true)}
-            className={cn(
-              "flex h-10 w-10 items-center justify-center",
-              "border-2 border-brutal-lime bg-transparent brutal-press"
-            )}
-            aria-label="Buka filter transaksi"
-          >
-            <SlidersHorizontal size={18} strokeWidth={2.5} className="text-brutal-lime" />
-          </button>
+          {/* Action buttons: Chatbot + Filter */}
+          <div className="flex items-center gap-2">
+            {/* AI Chatbot button */}
+            <button
+              id="home-chatbot-btn"
+              onClick={() => push(<AIChatbotScreen />)}
+              className={cn(
+                "flex h-10 w-10 items-center justify-center",
+                "border-2 border-brutal-purple bg-brutal-purple brutal-press",
+                "shadow-brutal-sm"
+              )}
+              aria-label="Buka asisten AI"
+            >
+              <Sparkles size={16} strokeWidth={2.5} className="text-white" />
+            </button>
+
+            {/* Filter button */}
+            <button
+              id="home-filter-btn"
+              onClick={() => setDrawerOpen(true)}
+              className={cn(
+                "flex h-10 w-10 items-center justify-center",
+                "border-2 border-brutal-lime bg-transparent brutal-press"
+              )}
+              aria-label="Buka filter transaksi"
+            >
+              <SlidersHorizontal size={18} strokeWidth={2.5} className="text-brutal-lime" />
+            </button>
+          </div>
         </div>
 
         {/* Total Balance Card */}

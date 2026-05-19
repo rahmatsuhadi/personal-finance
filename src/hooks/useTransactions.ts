@@ -15,7 +15,6 @@ export function getDateLabel(dateStr: string): string {
   const yesterday = format(subDays(new Date(), 1), "yyyy-MM-dd");
   if (dateStr === today) return "Hari Ini";
   if (dateStr === yesterday) return "Kemarin";
-  // Parse as local date to avoid timezone shift
   const [y, m, d] = dateStr.split("-").map(Number);
   return format(new Date(y, m - 1, d), "d MMMM yyyy", { locale: idLocale });
 }
@@ -31,6 +30,42 @@ export function groupTransactionsByDate(
   return Array.from(map.entries())
     .sort(([a], [b]) => b.localeCompare(a))
     .map(([date, items]) => ({ label: getDateLabel(date), date, items }));
+}
+
+// ─── Balance helpers ──────────────────────────────────────────────────────────
+
+/** Apply balance changes for a transaction being ADDED */
+async function applyBalanceAdd(tx: Omit<Transaction, "id">) {
+  if (tx.type === "income" && tx.walletId) {
+    const w = await db.wallets.get(tx.walletId);
+    if (w) await db.wallets.update(tx.walletId, { balance: (w.balance ?? 0) + tx.amount });
+  } else if (tx.type === "expense" && tx.walletId) {
+    const w = await db.wallets.get(tx.walletId);
+    if (w) await db.wallets.update(tx.walletId, { balance: (w.balance ?? 0) - tx.amount });
+  } else if (tx.type === "transfer" && tx.fromWalletId && tx.toWalletId) {
+    const fee = tx.transferFee ?? 0;
+    const from = await db.wallets.get(tx.fromWalletId);
+    const to = await db.wallets.get(tx.toWalletId);
+    if (from) await db.wallets.update(tx.fromWalletId, { balance: (from.balance ?? 0) - tx.amount - fee });
+    if (to) await db.wallets.update(tx.toWalletId, { balance: (to.balance ?? 0) + tx.amount });
+  }
+}
+
+/** Reverse balance changes for a transaction being REMOVED */
+async function reverseBalance(tx: Transaction) {
+  if (tx.type === "income" && tx.walletId) {
+    const w = await db.wallets.get(tx.walletId);
+    if (w) await db.wallets.update(tx.walletId, { balance: (w.balance ?? 0) - tx.amount });
+  } else if (tx.type === "expense" && tx.walletId) {
+    const w = await db.wallets.get(tx.walletId);
+    if (w) await db.wallets.update(tx.walletId, { balance: (w.balance ?? 0) + tx.amount });
+  } else if (tx.type === "transfer" && tx.fromWalletId && tx.toWalletId) {
+    const fee = tx.transferFee ?? 0;
+    const from = await db.wallets.get(tx.fromWalletId);
+    const to = await db.wallets.get(tx.toWalletId);
+    if (from) await db.wallets.update(tx.fromWalletId, { balance: (from.balance ?? 0) + tx.amount + fee });
+    if (to) await db.wallets.update(tx.toWalletId, { balance: (to.balance ?? 0) - tx.amount });
+  }
 }
 
 // ─── useTransactions Hook ─────────────────────────────────────────────────────
@@ -52,10 +87,7 @@ export function useTransactions(
           fromDate = toDate;
           break;
         case "week":
-          fromDate = format(
-            startOfWeek(today, { weekStartsOn: 1 }),
-            "yyyy-MM-dd"
-          );
+          fromDate = format(startOfWeek(today, { weekStartsOn: 1 }), "yyyy-MM-dd");
           break;
         case "month":
           fromDate = format(startOfMonth(today), "yyyy-MM-dd");
@@ -84,45 +116,37 @@ export function useTransactions(
 
   const grouped = groupTransactionsByDate(transactions);
 
-  const addTransaction = useCallback(
-    async (tx: Omit<Transaction, "id">) => {
-      const id = await transactionRepository.add(tx);
-      // Update wallet balance
-      if (tx.type === "income" && tx.walletId) {
-        const wallet = await db.wallets.get(tx.walletId);
-        if (wallet) {
-          await db.wallets.update(tx.walletId, {
-            balance: (wallet.balance ?? 0) + tx.amount,
-          });
-        }
-      } else if (tx.type === "expense" && tx.walletId) {
-        const wallet = await db.wallets.get(tx.walletId);
-        if (wallet) {
-          await db.wallets.update(tx.walletId, {
-            balance: (wallet.balance ?? 0) - tx.amount,
-          });
-        }
-      } else if (tx.type === "transfer" && tx.fromWalletId && tx.toWalletId) {
-        const from = await db.wallets.get(tx.fromWalletId);
-        const to = await db.wallets.get(tx.toWalletId);
-        const fee = tx.transferFee ?? 0;
-        if (from) {
-          await db.wallets.update(tx.fromWalletId, {
-            balance: (from.balance ?? 0) - tx.amount - fee,
-          });
-        }
-        if (to) {
-          await db.wallets.update(tx.toWalletId, {
-            balance: (to.balance ?? 0) + tx.amount,
-          });
-        }
+  // ── Add ────────────────────────────────────────────────────────────────────
+  const addTransaction = useCallback(async (tx: Omit<Transaction, "id">) => {
+    const id = await transactionRepository.add(tx);
+    await applyBalanceAdd(tx);
+    return id;
+  }, []);
+
+  // ── Update ─────────────────────────────────────────────────────────────────
+  // Strategy: reverse old balance, apply new balance, then update record
+  const updateTransaction = useCallback(
+    async (id: number, newData: Omit<Transaction, "id">) => {
+      const old = await db.transactions.get(id);
+      if (old) {
+        // 1. Reverse old balance effect
+        await reverseBalance(old);
       }
-      return id;
+      // 2. Persist new data
+      await transactionRepository.update(id, newData);
+      // 3. Apply new balance effect
+      await applyBalanceAdd(newData);
     },
     []
   );
 
+  // ── Remove ─────────────────────────────────────────────────────────────────
+  // Reverse balance before deleting
   const removeTransaction = useCallback(async (id: number) => {
+    const tx = await db.transactions.get(id);
+    if (tx) {
+      await reverseBalance(tx);
+    }
     await transactionRepository.remove(id);
   }, []);
 
@@ -130,6 +154,7 @@ export function useTransactions(
     transactions,
     grouped,
     addTransaction,
+    updateTransaction,
     removeTransaction,
   };
 }

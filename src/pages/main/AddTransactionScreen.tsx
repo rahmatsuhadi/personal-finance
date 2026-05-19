@@ -31,28 +31,28 @@ const TAB_CONFIG: {
   activeColor: string;
   btnColor: string;
 }[] = [
-  {
-    type: "income",
-    label: "Pemasukan",
-    icon: TrendingUp,
-    activeColor: "bg-brutal-emerald",
-    btnColor: "!bg-brutal-emerald !text-brutal-black",
-  },
-  {
-    type: "expense",
-    label: "Pengeluaran",
-    icon: TrendingDown,
-    activeColor: "bg-brutal-rose",
-    btnColor: "",
-  },
-  {
-    type: "transfer",
-    label: "Transfer",
-    icon: ArrowLeftRight,
-    activeColor: "bg-brutal-cyan",
-    btnColor: "!bg-brutal-cyan !text-brutal-black",
-  },
-];
+    {
+      type: "income",
+      label: "Pemasukan",
+      icon: TrendingUp,
+      activeColor: "bg-brutal-emerald",
+      btnColor: "!bg-brutal-emerald !text-brutal-black",
+    },
+    {
+      type: "expense",
+      label: "Pengeluaran",
+      icon: TrendingDown,
+      activeColor: "bg-brutal-rose",
+      btnColor: "",
+    },
+    {
+      type: "transfer",
+      label: "Transfer",
+      icon: ArrowLeftRight,
+      activeColor: "bg-brutal-cyan",
+      btnColor: "!bg-brutal-cyan !text-brutal-black",
+    },
+  ];
 
 // ─── Rupiah formatter ─────────────────────────────────────────────────────────
 
@@ -151,7 +151,7 @@ export function AddTransactionScreen() {
         setCategoryValue("");
         setCategoryLabel("");
       },
-      error: () => {},
+      error: () => { },
     });
     return () => sub.unsubscribe();
   }, [activeType]);
@@ -279,8 +279,8 @@ export function AddTransactionScreen() {
       if (!categoryValue) errs.category = "Pilih kategori.";
       if (!walletId) errs.walletId = "Pilih dompet.";
     } else {
-      if (!fromWalletId) errs.fromWalletId = "Pilih dompet asal.";
-      if (!toWalletId) errs.toWalletId = "Pilih dompet tujuan.";
+      // if (!fromWalletId) errs.fromWalletId = "Pilih dompet asal.";
+      // if (!toWalletId) errs.toWalletId = "Pilih dompet tujuan.";
       if (fromWalletId && toWalletId && fromWalletId === toWalletId)
         errs.toWalletId = "Dompet asal dan tujuan tidak boleh sama.";
     }
