@@ -3,6 +3,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useWallets } from "@/hooks/useWallets";
 import { WalletCard } from "@/components/molecules/WalletCard";
 import { WalletFormModal } from "@/components/molecules/WalletFormModal";
+import { ConfirmModal } from "@/components/atoms/ConfirmModal";
 import { BrutalButton } from "@/components/atoms/BrutalButton";
 import { BrutalBadge } from "@/components/atoms/BrutalBadge";
 import { cn } from "@/lib/utils";
@@ -17,17 +18,19 @@ export function SettingsScreen() {
 
   const [addModalOpen, setAddModalOpen] = useState(false);
   const [editingWallet, setEditingWallet] = useState<WalletType | null>(null);
+  // Confirm modals
+  const [logoutConfirmOpen, setLogoutConfirmOpen] = useState(false);
+  const [deletingWallet, setDeletingWallet] = useState<WalletType | null>(null);
 
-  async function handleLogout() {
-    if (confirm("Yakin ingin menghapus profil dan kembali ke halaman awal?")) {
-      await logout();
-    }
+  async function handleLogoutConfirm() {
+    await logout();
+    setLogoutConfirmOpen(false);
   }
 
-  async function handleDeleteWallet(id: number, name: string) {
-    if (confirm(`Hapus dompet "${name}"?`)) {
-      await removeWallet(id);
-    }
+  async function handleDeleteWalletConfirm() {
+    if (!deletingWallet?.id) return;
+    await removeWallet(deletingWallet.id);
+    setDeletingWallet(null);
   }
 
   async function handleUpdateWallet(data: Omit<WalletType, "id">) {
@@ -75,7 +78,7 @@ export function SettingsScreen() {
               <BrutalButton
                 variant="danger"
                 size="sm"
-                onClick={handleLogout}
+                onClick={() => setLogoutConfirmOpen(true)}
                 className="flex items-center gap-2"
               >
                 <LogOut size={14} strokeWidth={2.5} />
@@ -99,7 +102,7 @@ export function SettingsScreen() {
               className="flex items-center gap-1.5"
             >
               <Plus size={13} strokeWidth={2.5} />
-              Tambah Dompet
+              Tambah
             </BrutalButton>
           </div>
 
@@ -118,8 +121,6 @@ export function SettingsScreen() {
               {wallets.map((wallet) => (
                 <div key={wallet.id} className="relative">
                   <WalletCard wallet={wallet} />
-
-                  {/* Edit + Delete Buttons */}
                   <div className="absolute top-2 right-2 flex gap-1.5">
                     <button
                       onClick={() => setEditingWallet(wallet)}
@@ -129,7 +130,7 @@ export function SettingsScreen() {
                       <Pencil size={12} strokeWidth={2.5} />
                     </button>
                     <button
-                      onClick={() => handleDeleteWallet(wallet.id!, wallet.name)}
+                      onClick={() => setDeletingWallet(wallet)}
                       className="flex h-7 w-7 items-center justify-center border-2 border-brutal-black bg-brutal-rose shadow-brutal-sm brutal-press"
                       aria-label={`Hapus dompet ${wallet.name}`}
                     >
@@ -160,7 +161,9 @@ export function SettingsScreen() {
         </div>
       </div>
 
-      {/* Add Wallet Modal */}
+      {/* ── Modals ─────────────────────────────────────────────────────────── */}
+
+      {/* Add Wallet */}
       <WalletFormModal
         open={addModalOpen}
         onClose={() => setAddModalOpen(false)}
@@ -168,13 +171,37 @@ export function SettingsScreen() {
         mode="add"
       />
 
-      {/* Edit Wallet Modal */}
+      {/* Edit Wallet */}
       <WalletFormModal
         open={editingWallet !== null}
         onClose={() => setEditingWallet(null)}
         onSave={handleUpdateWallet}
         initialData={editingWallet ?? undefined}
         mode="edit"
+      />
+
+      {/* Delete Wallet Confirm */}
+      <ConfirmModal
+        open={deletingWallet !== null}
+        title="Hapus Dompet"
+        message={`Yakin ingin menghapus dompet "${deletingWallet?.name}"? Transaksi terkait tidak akan terhapus, namun saldo tidak akan diupdate.`}
+        confirmLabel="Ya, Hapus"
+        cancelLabel="Batal"
+        variant="danger"
+        onConfirm={handleDeleteWalletConfirm}
+        onCancel={() => setDeletingWallet(null)}
+      />
+
+      {/* Logout Confirm */}
+      <ConfirmModal
+        open={logoutConfirmOpen}
+        title="Logout & Reset"
+        message="Yakin ingin menghapus profil dan kembali ke halaman awal? Semua data wallet dan transaksi akan tetap tersimpan."
+        confirmLabel="Ya, Logout"
+        cancelLabel="Batal"
+        variant="warning"
+        onConfirm={handleLogoutConfirm}
+        onCancel={() => setLogoutConfirmOpen(false)}
       />
     </div>
   );

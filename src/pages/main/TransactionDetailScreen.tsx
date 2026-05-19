@@ -1,7 +1,9 @@
+import { useState } from "react";
 import { useStack } from "@/navigation/StackNavigator";
 import { AppHeader } from "@/components/atoms/AppHeader";
 import { BrutalButton } from "@/components/atoms/BrutalButton";
 import { BrutalBadge } from "@/components/atoms/BrutalBadge";
+import { ConfirmModal } from "@/components/atoms/ConfirmModal";
 import { cn } from "@/lib/utils";
 import { type Transaction } from "@/db/db";
 import { useWallets } from "@/hooks/useWallets";
@@ -62,14 +64,11 @@ const TYPE_META = {
 
 // ─── TransactionDetailScreen ──────────────────────────────────────────────────
 
-interface TransactionDetailScreenProps {
-  transaction: Transaction;
-}
-
-export function TransactionDetailScreen({ transaction }: TransactionDetailScreenProps) {
+export function TransactionDetailScreen({ transaction }: { transaction: Transaction }) {
   const { pop, push } = useStack();
   const { wallets } = useWallets();
   const { removeTransaction } = useTransactions();
+  const [deleteOpen, setDeleteOpen] = useState(false);
 
   const meta = TYPE_META[transaction.type];
 
@@ -82,14 +81,14 @@ export function TransactionDetailScreen({ transaction }: TransactionDetailScreen
     push(
       <EditTransactionScreen
         transaction={transaction}
-        onUpdated={() => pop()} // pop detail after edit success
+        onUpdated={pop}
       />
     );
   }
 
-  async function handleDelete() {
-    if (!confirm("Hapus transaksi ini?")) return;
+  async function handleDeleteConfirm() {
     await removeTransaction(transaction.id!);
+    setDeleteOpen(false);
     pop();
   }
 
@@ -98,7 +97,6 @@ export function TransactionDetailScreen({ transaction }: TransactionDetailScreen
       className="flex flex-col h-dvh bg-brutal-bg"
       style={{ paddingTop: "var(--safe-top)" }}
     >
-      {/* AppHeader with edit + delete in action slot */}
       <AppHeader
         title="Detail Transaksi"
         onBack={pop}
@@ -112,7 +110,7 @@ export function TransactionDetailScreen({ transaction }: TransactionDetailScreen
               <Pencil size={15} strokeWidth={2.5} className="text-brutal-black" />
             </button>
             <button
-              onClick={handleDelete}
+              onClick={() => setDeleteOpen(true)}
               className="flex h-9 w-9 items-center justify-center border-2 border-brutal-rose bg-brutal-rose shadow-brutal-sm brutal-press"
               aria-label="Hapus transaksi"
             >
@@ -134,8 +132,7 @@ export function TransactionDetailScreen({ transaction }: TransactionDetailScreen
           {meta.label}
         </BrutalBadge>
         <p className="text-4xl font-black text-brutal-black leading-none text-center">
-          {meta.amountPrefix}
-          {formatIDR(transaction.amount)}
+          {meta.amountPrefix}{formatIDR(transaction.amount)}
         </p>
         {transaction.type === "transfer" && (transaction.transferFee ?? 0) > 0 && (
           <p className="text-sm font-bold text-brutal-black/60 mt-2">
@@ -150,7 +147,6 @@ export function TransactionDetailScreen({ transaction }: TransactionDetailScreen
           <DetailRow label="Deskripsi" value={transaction.description || "—"} />
           <DetailRow label="Tanggal" value={formatDate(transaction.date)} />
           <DetailRow label="Kategori" value={transaction.category} />
-
           {transaction.type !== "transfer" && (
             <DetailRow label="Dompet" value={getWalletName(transaction.walletId)} />
           )}
@@ -160,10 +156,7 @@ export function TransactionDetailScreen({ transaction }: TransactionDetailScreen
               <DetailRow label="Ke Dompet" value={getWalletName(transaction.toWalletId)} />
             </>
           )}
-
-          {transaction.notes && (
-            <DetailRow label="Catatan" value={transaction.notes} />
-          )}
+          {transaction.notes && <DetailRow label="Catatan" value={transaction.notes} />}
         </div>
 
         {/* Action Buttons */}
@@ -181,13 +174,25 @@ export function TransactionDetailScreen({ transaction }: TransactionDetailScreen
             variant="danger"
             size="md"
             className="flex-1 flex items-center justify-center gap-2"
-            onClick={handleDelete}
+            onClick={() => setDeleteOpen(true)}
           >
             <Trash2 size={14} strokeWidth={2.5} />
             Hapus
           </BrutalButton>
         </div>
       </div>
+
+      {/* Delete Confirm Modal */}
+      <ConfirmModal
+        open={deleteOpen}
+        title="Hapus Transaksi"
+        message={`Yakin ingin menghapus transaksi "${transaction.description}"? Saldo dompet akan dikembalikan secara otomatis.`}
+        confirmLabel="Ya, Hapus"
+        cancelLabel="Batal"
+        variant="danger"
+        onConfirm={handleDeleteConfirm}
+        onCancel={() => setDeleteOpen(false)}
+      />
     </div>
   );
 }

@@ -5,6 +5,7 @@ import { AppHeader } from "@/components/atoms/AppHeader";
 import { BrutalButton } from "@/components/atoms/BrutalButton";
 import { BrutalInput } from "@/components/atoms/BrutalInput";
 import { SelectField } from "@/components/atoms/SelectField";
+import { ConfirmModal } from "@/components/atoms/ConfirmModal";
 import {
   SelectPickerScreen,
   type SelectOption,
@@ -17,7 +18,6 @@ import {
   ArrowLeftRight,
   Trash2,
 } from "lucide-react";
-import { format } from "date-fns";
 import { liveQuery } from "dexie";
 import { db, type Category, type Transaction } from "@/db/db";
 
@@ -32,28 +32,28 @@ const TAB_CONFIG: {
   activeColor: string;
   btnColor: string;
 }[] = [
-  {
-    type: "income",
-    label: "Pemasukan",
-    icon: TrendingUp,
-    activeColor: "bg-brutal-emerald",
-    btnColor: "!bg-brutal-emerald !text-brutal-black",
-  },
-  {
-    type: "expense",
-    label: "Pengeluaran",
-    icon: TrendingDown,
-    activeColor: "bg-brutal-rose",
-    btnColor: "",
-  },
-  {
-    type: "transfer",
-    label: "Transfer",
-    icon: ArrowLeftRight,
-    activeColor: "bg-brutal-cyan",
-    btnColor: "!bg-brutal-cyan !text-brutal-black",
-  },
-];
+    {
+      type: "income",
+      label: "Pemasukan",
+      icon: TrendingUp,
+      activeColor: "bg-brutal-emerald",
+      btnColor: "!bg-brutal-emerald !text-brutal-black",
+    },
+    {
+      type: "expense",
+      label: "Pengeluaran",
+      icon: TrendingDown,
+      activeColor: "bg-brutal-rose",
+      btnColor: "",
+    },
+    {
+      type: "transfer",
+      label: "Transfer",
+      icon: ArrowLeftRight,
+      activeColor: "bg-brutal-cyan",
+      btnColor: "!bg-brutal-cyan !text-brutal-black",
+    },
+  ];
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -101,6 +101,7 @@ export function EditTransactionScreen({
   const { wallets } = useWallets();
   const { updateTransaction, removeTransaction } = useTransactions();
   const { pop, push } = useStack();
+  const [deleteOpen, setDeleteOpen] = useState(false);
 
   const [activeType, setActiveType] = useState<TxType>(transaction.type);
   const [categories, setCategories] = useState<Category[]>([]);
@@ -164,7 +165,7 @@ export function EditTransactionScreen({
         .toArray()
     ).subscribe({
       next: (data) => setCategories(data),
-      error: () => {},
+      error: () => { },
     });
     return () => sub.unsubscribe();
   }, [activeType]);
@@ -245,11 +246,11 @@ export function EditTransactionScreen({
     );
   }
 
-  async function handleDelete() {
-    if (!confirm("Yakin hapus transaksi ini? Saldo dompet akan dikembalikan secara otomatis.")) return;
+  async function handleDeleteConfirm() {
     await removeTransaction(transaction.id!);
     onUpdated?.();
-    pop(); // pop edit screen
+    setDeleteOpen(false);
+    pop();
   }
 
   async function handleSave() {
@@ -274,25 +275,25 @@ export function EditTransactionScreen({
       const changes: Omit<Transaction, "id"> =
         activeType === "transfer"
           ? {
-              type: "transfer",
-              date,
-              amount: amountNum,
-              description: description.trim(),
-              category: "Transfer",
-              fromWalletId: parseInt(fromWalletId),
-              toWalletId: parseInt(toWalletId),
-              transferFee: parseRupiah(transferFee),
-              notes: notes.trim() || undefined,
-            }
+            type: "transfer",
+            date,
+            amount: amountNum,
+            description: description.trim(),
+            category: "Transfer",
+            fromWalletId: parseInt(fromWalletId),
+            toWalletId: parseInt(toWalletId),
+            transferFee: parseRupiah(transferFee),
+            notes: notes.trim() || undefined,
+          }
           : {
-              type: activeType,
-              date,
-              amount: amountNum,
-              description: description.trim(),
-              category: categoryValue,
-              walletId: parseInt(walletId),
-              notes: notes.trim() || undefined,
-            };
+            type: activeType,
+            date,
+            amount: amountNum,
+            description: description.trim(),
+            category: categoryValue,
+            walletId: parseInt(walletId),
+            notes: notes.trim() || undefined,
+          };
 
       await updateTransaction(transaction.id!, changes);
       onUpdated?.();
@@ -316,7 +317,7 @@ export function EditTransactionScreen({
         onBack={pop}
         action={
           <button
-            onClick={handleDelete}
+            onClick={() => setDeleteOpen(true)}
             className="flex h-9 w-9 items-center justify-center border-2 border-brutal-rose bg-brutal-rose shadow-brutal-sm brutal-press"
           >
             <Trash2 size={15} strokeWidth={2.5} className="text-white" />
@@ -472,6 +473,18 @@ export function EditTransactionScreen({
           {isLoading ? "Menyimpan..." : "Simpan Perubahan"}
         </BrutalButton>
       </div>
+
+      {/* Delete Confirm Modal */}
+      <ConfirmModal
+        open={deleteOpen}
+        title="Hapus Transaksi"
+        message={`Yakin ingin menghapus transaksi "${transaction.description}"? Saldo dompet akan dikembalikan secara otomatis.`}
+        confirmLabel="Ya, Hapus"
+        cancelLabel="Batal"
+        variant="danger"
+        onConfirm={handleDeleteConfirm}
+        onCancel={() => setDeleteOpen(false)}
+      />
     </div>
   );
 }

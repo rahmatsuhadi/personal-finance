@@ -31,8 +31,24 @@ function formatIDR(n: number): string {
   }).format(n);
 }
 
+/** Abbreviated amount: 1.5Jt, 500K, 50K */
+function shortAmount(n: number): string {
+  if (n === 0) return "";
+  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(n >= 10_000_000 ? 0 : 1)}Jt`;
+  if (n >= 1_000) return `${Math.round(n / 1_000)}K`;
+  return String(n);
+}
+
 function toDateStr(d: Date): string {
   return format(d, "yyyy-MM-dd");
+}
+
+// ─── Day summary type ─────────────────────────────────────────────────────────
+
+interface DaySummary {
+  income: number;
+  expense: number;
+  count: number;
 }
 
 // ─── Calendar Grid Builder ────────────────────────────────────────────────────
@@ -47,6 +63,18 @@ const DAY_LABELS = ["Sen", "Sel", "Rab", "Kam", "Jum", "Sab", "Min"];
 
 // ─── Transaction Drawer ───────────────────────────────────────────────────────
 
+const TYPE_ICON: Record<Transaction["type"], string> = {
+  income: "↓",
+  expense: "↑",
+  transfer: "⇄",
+};
+
+const TYPE_TEXT_COLOR: Record<Transaction["type"], string> = {
+  income: "text-brutal-emerald",
+  expense: "text-brutal-rose",
+  transfer: "text-brutal-black",
+};
+
 interface DayDrawerProps {
   selectedDate: Date;
   transactions: Transaction[];
@@ -56,18 +84,6 @@ interface DayDrawerProps {
   onTxClick: (tx: Transaction) => void;
 }
 
-const TYPE_ICON: Record<Transaction["type"], string> = {
-  income: "↓",
-  expense: "↑",
-  transfer: "⇄",
-};
-
-const TYPE_COLOR: Record<Transaction["type"], string> = {
-  income: "text-brutal-emerald",
-  expense: "text-brutal-rose",
-  transfer: "text-brutal-black",
-};
-
 function DayDrawer({
   selectedDate,
   transactions,
@@ -76,9 +92,7 @@ function DayDrawer({
   onNextDay,
   onTxClick,
 }: DayDrawerProps) {
-  const dateLabel = format(selectedDate, "EEEE, d MMMM yyyy", {
-    locale: idLocale,
-  });
+  const dateLabel = format(selectedDate, "EEEE, d MMMM yyyy", { locale: idLocale });
 
   const income = transactions
     .filter((t) => t.type === "income")
@@ -89,13 +103,7 @@ function DayDrawer({
 
   return (
     <>
-      {/* Overlay */}
-      <div
-        className="fixed inset-0 z-40 bg-brutal-black/50"
-        onClick={onClose}
-      />
-
-      {/* Drawer */}
+      <div className="fixed inset-0 z-40 bg-brutal-black/50" onClick={onClose} />
       <div
         className={cn(
           "fixed bottom-0 left-0 right-0 z-50 max-h-[70vh] flex flex-col",
@@ -104,30 +112,23 @@ function DayDrawer({
           "animate-in slide-in-from-bottom duration-200"
         )}
       >
-        {/* Drawer Header */}
+        {/* Header */}
         <div className="flex items-center border-b-2 border-brutal-black px-4 py-3 flex-shrink-0">
-          {/* Prev Day */}
           <button
             onClick={onPrevDay}
             className="flex h-8 w-8 items-center justify-center border-2 border-brutal-black bg-brutal-white shadow-brutal-sm brutal-press mr-2"
           >
             <ChevronLeft size={14} strokeWidth={2.5} />
           </button>
-
-          {/* Date */}
           <p className="flex-1 text-center text-xs font-black uppercase tracking-wider">
             {dateLabel}
           </p>
-
-          {/* Next Day */}
           <button
             onClick={onNextDay}
             className="flex h-8 w-8 items-center justify-center border-2 border-brutal-black bg-brutal-white shadow-brutal-sm brutal-press ml-2"
           >
             <ChevronRight size={14} strokeWidth={2.5} />
           </button>
-
-          {/* Close */}
           <button
             onClick={onClose}
             className="flex h-8 w-8 items-center justify-center border-2 border-brutal-black bg-brutal-white shadow-brutal-sm brutal-press ml-2"
@@ -136,7 +137,7 @@ function DayDrawer({
           </button>
         </div>
 
-        {/* Summary mini strip */}
+        {/* Summary strip */}
         {transactions.length > 0 && (
           <div className="flex border-b-2 border-brutal-black divide-x-2 divide-brutal-black flex-shrink-0">
             <div className="flex-1 p-2 text-center bg-brutal-emerald">
@@ -167,7 +168,6 @@ function DayDrawer({
                     onClick={() => onTxClick(tx)}
                     className="flex w-full items-center gap-3 px-4 py-3 text-left bg-brutal-white brutal-press"
                   >
-                    {/* Type Icon */}
                     <span
                       className={cn(
                         "flex h-8 w-8 flex-shrink-0 items-center justify-center text-sm font-black border-2 border-brutal-black",
@@ -178,15 +178,11 @@ function DayDrawer({
                     >
                       {TYPE_ICON[tx.type]}
                     </span>
-
-                    {/* Info */}
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-bold truncate">{tx.description}</p>
                       <p className="text-[10px] text-brutal-black/50">{tx.category}</p>
                     </div>
-
-                    {/* Amount */}
-                    <p className={cn("text-sm font-black flex-shrink-0", TYPE_COLOR[tx.type])}>
+                    <p className={cn("text-sm font-black flex-shrink-0", TYPE_TEXT_COLOR[tx.type])}>
                       {tx.type === "income" ? "+" : tx.type === "expense" ? "-" : ""}
                       {formatIDR(tx.amount)}
                     </p>
@@ -213,7 +209,6 @@ export function CalendarScreen() {
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [allTransactions, setAllTransactions] = useState<Transaction[]>([]);
 
-  // Load all transactions for the current month
   useEffect(() => {
     const fromStr = format(startOfMonth(currentMonth), "yyyy-MM-dd");
     const toStr = format(endOfMonth(currentMonth), "yyyy-MM-dd");
@@ -230,37 +225,37 @@ export function CalendarScreen() {
     return () => sub.unsubscribe();
   }, [currentMonth]);
 
-  // Build set of dates that have transactions
-  const txDateSet = new Set(allTransactions.map((t) => t.date));
+  // Build summary map per date: dateStr → {income, expense, count}
+  const summaryMap = new Map<string, DaySummary>();
+  for (const tx of allTransactions) {
+    const existing = summaryMap.get(tx.date) ?? { income: 0, expense: 0, count: 0 };
+    summaryMap.set(tx.date, {
+      income: existing.income + (tx.type === "income" ? tx.amount : 0),
+      expense: existing.expense + (tx.type === "expense" ? tx.amount : 0),
+      count: existing.count + 1,
+    });
+  }
 
-  // Transactions for selected date
   const selectedDayTx = selectedDate
     ? allTransactions.filter((t) => t.date === toDateStr(selectedDate))
     : [];
 
   const days = buildCalendarDays(currentMonth);
 
-  function handleDayClick(day: Date) {
-    setSelectedDate(day);
-  }
-
   function handlePrevDay() {
     if (!selectedDate) return;
     const prev = subDays(selectedDate, 1);
     setSelectedDate(prev);
-    // If crosses month boundary, update month view
-    if (!isSameMonth(prev, currentMonth)) {
+    if (!isSameMonth(prev, currentMonth))
       setCurrentMonth(new Date(prev.getFullYear(), prev.getMonth(), 1));
-    }
   }
 
   function handleNextDay() {
     if (!selectedDate) return;
     const next = addDays(selectedDate, 1);
     setSelectedDate(next);
-    if (!isSameMonth(next, currentMonth)) {
+    if (!isSameMonth(next, currentMonth))
       setCurrentMonth(new Date(next.getFullYear(), next.getMonth(), 1));
-    }
   }
 
   function handleTxClick(tx: Transaction) {
@@ -275,7 +270,7 @@ export function CalendarScreen() {
       className="flex flex-col h-full bg-brutal-bg"
       style={{ paddingTop: "var(--safe-top)" }}
     >
-      {/* ── Header ─────────────────────────────────────────────────────────── */}
+      {/* Header */}
       <div className="border-b-4 border-brutal-black bg-brutal-cyan px-4 py-3">
         <div className="flex items-center justify-between">
           <button
@@ -284,11 +279,7 @@ export function CalendarScreen() {
           >
             <ChevronLeft size={16} strokeWidth={2.5} />
           </button>
-
-          <h1 className="text-base font-black uppercase tracking-wider">
-            {monthLabel}
-          </h1>
-
+          <h1 className="text-base font-black uppercase tracking-wider">{monthLabel}</h1>
           <button
             onClick={() => setCurrentMonth((m) => addMonths(m, 1))}
             className="flex h-9 w-9 items-center justify-center border-2 border-brutal-black bg-brutal-white shadow-brutal-sm brutal-press"
@@ -298,7 +289,7 @@ export function CalendarScreen() {
         </div>
       </div>
 
-      {/* ── Day Labels ──────────────────────────────────────────────────────── */}
+      {/* Day Labels */}
       <div className="grid grid-cols-7 border-b-2 border-brutal-black bg-brutal-black">
         {DAY_LABELS.map((d) => (
           <div
@@ -312,73 +303,102 @@ export function CalendarScreen() {
         ))}
       </div>
 
-      {/* ── Calendar Grid ────────────────────────────────────────────────────── */}
+      {/* Calendar Grid */}
       <div className="grid grid-cols-7 border-b-2 border-brutal-black flex-shrink-0">
         {days.map((day, i) => {
           const dateStr = toDateStr(day);
           const isToday = isSameDay(day, today);
           const isSelected = selectedDate ? isSameDay(day, selectedDate) : false;
           const inMonth = isSameMonth(day, currentMonth);
-          const hasTx = txDateSet.has(dateStr);
+          const summary = summaryMap.get(dateStr);
+          const hasTx = Boolean(summary);
 
           return (
             <button
               key={i}
-              onClick={() => handleDayClick(day)}
+              onClick={() => inMonth && setSelectedDate(day)}
               className={cn(
-                "relative flex flex-col items-center justify-start pt-1 pb-2",
-                "h-14 border-r-2 border-b-2 border-brutal-black brutal-press",
-                "last:border-r-0",
+                "relative flex flex-col items-center pt-1.5 pb-1",
+                "h-[72px] border-r-2 border-b-2 border-brutal-black",
                 i % 7 === 6 && "border-r-0",
-                // Colors
+                // Background colors
                 isSelected && "bg-brutal-yellow",
                 isToday && !isSelected && "bg-brutal-cyan",
                 !isToday && !isSelected && inMonth && "bg-brutal-white",
-                !inMonth && "bg-brutal-bg opacity-40"
+                !inMonth && "bg-brutal-bg opacity-40 cursor-default"
               )}
             >
-              <span
-                className={cn(
-                  "text-xs font-black leading-none",
-                  isSelected && "text-brutal-black",
-                  isToday && !isSelected && "text-brutal-black",
-                  !isToday && !isSelected && "text-brutal-black"
-                )}
-              >
+              {/* Date number */}
+              <span className="text-[11px] font-black leading-none mb-1">
                 {format(day, "d")}
               </span>
 
-              {/* Transaction dot */}
-              {hasTx && inMonth && (
-                <span
-                  className={cn(
-                    "mt-1 h-1.5 w-1.5 border border-brutal-black",
-                    isSelected ? "bg-brutal-black" : "bg-brutal-black"
+              {/* Summary info — only show for current month dates with transactions */}
+              {hasTx && inMonth && summary && (
+                <div className="flex flex-col items-center w-full px-0.5 gap-0.5">
+                  {/* Income — biru/emerald */}
+                  {summary.income > 0 && (
+                    <span
+                      className={cn(
+                        "w-full text-center text-[8px] font-black leading-none px-0.5 py-0.5",
+                        "bg-blue-500 text-white border border-blue-700"
+                      )}
+                    >
+                      {shortAmount(summary.income)}
+                    </span>
                   )}
-                />
+                  {/* Expense — merah */}
+                  {summary.expense > 0 && (
+                    <span
+                      className={cn(
+                        "w-full text-center text-[8px] font-black leading-none px-0.5 py-0.5",
+                        "bg-brutal-rose text-white border border-red-700"
+                      )}
+                    >
+                      {shortAmount(summary.expense)}
+                    </span>
+                  )}
+                  {/* Total count badge */}
+                  <span
+                    className={cn(
+                      "text-[7px] font-black leading-none",
+                      isSelected
+                        ? "text-brutal-black"
+                        : isToday
+                        ? "text-brutal-black"
+                        : "text-brutal-black/50"
+                    )}
+                  >
+                    {summary.count} tx
+                  </span>
+                </div>
               )}
             </button>
           );
         })}
       </div>
 
-      {/* ── Legend ──────────────────────────────────────────────────────────── */}
-      <div className="flex gap-4 px-4 py-2 border-b-2 border-brutal-black bg-brutal-bg">
+      {/* Legend */}
+      <div className="flex gap-4 px-4 py-2 border-b-2 border-brutal-black bg-brutal-bg flex-shrink-0">
         <div className="flex items-center gap-1.5">
-          <div className="h-4 w-4 border-2 border-brutal-black bg-brutal-cyan" />
+          <div className="h-3 w-3 border border-blue-700 bg-blue-500" />
+          <span className="text-[10px] font-bold uppercase">Pemasukan</span>
+        </div>
+        <div className="flex items-center gap-1.5">
+          <div className="h-3 w-3 border border-red-700 bg-brutal-rose" />
+          <span className="text-[10px] font-bold uppercase">Pengeluaran</span>
+        </div>
+        <div className="flex items-center gap-1.5">
+          <div className="h-3 w-3 border-2 border-brutal-black bg-brutal-cyan" />
           <span className="text-[10px] font-bold uppercase">Hari Ini</span>
         </div>
         <div className="flex items-center gap-1.5">
-          <div className="h-4 w-4 border-2 border-brutal-black bg-brutal-yellow" />
+          <div className="h-3 w-3 border-2 border-brutal-black bg-brutal-yellow" />
           <span className="text-[10px] font-bold uppercase">Dipilih</span>
-        </div>
-        <div className="flex items-center gap-1.5">
-          <div className="h-2 w-2 border border-brutal-black bg-brutal-black" />
-          <span className="text-[10px] font-bold uppercase">Ada Transaksi</span>
         </div>
       </div>
 
-      {/* ── Empty state ──────────────────────────────────────────────────────── */}
+      {/* Empty state */}
       {!selectedDate && (
         <div className="flex flex-col items-center justify-center flex-1 gap-2 p-6">
           <p className="text-3xl">📅</p>
@@ -388,7 +408,7 @@ export function CalendarScreen() {
         </div>
       )}
 
-      {/* ── Day Drawer ───────────────────────────────────────────────────────── */}
+      {/* Day Drawer */}
       {selectedDate && (
         <DayDrawer
           selectedDate={selectedDate}
