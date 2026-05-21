@@ -37,6 +37,14 @@ export interface Category {
   colorClass?: string;
 }
 
+export interface Budget {
+  id?: number;
+  name: string;
+  categoryIds: number[];
+  amount: number;
+  cycle: "weekly" | "monthly" | "yearly";
+}
+
 // ─── Dexie Instance ──────────────────────────────────────────────────────────
 
 class BrutalistFinanceDB extends Dexie {
@@ -44,6 +52,7 @@ class BrutalistFinanceDB extends Dexie {
   wallets!: EntityTable<Wallet, "id">;
   transactions!: EntityTable<Transaction, "id">;
   categories!: EntityTable<Category, "id">;
+  budgets!: EntityTable<Budget, "id">;
 
   constructor() {
     super("BrutalistFinanceDB");
@@ -62,6 +71,23 @@ class BrutalistFinanceDB extends Dexie {
       return tx.table("categories").toCollection().modify(category => {
         if (!category.icon) category.icon = "Tag";
         if (!category.colorClass) category.colorClass = "brutal-yellow";
+      });
+    });
+
+    this.version(3).stores({
+      budgets: "++id, categoryId, amount, cycle",
+    });
+
+    this.version(4).stores({
+      budgets: "++id, name, *categoryIds, amount, cycle",
+    }).upgrade(tx => {
+      return tx.table("budgets").toCollection().modify(async budget => {
+        if (budget.categoryId !== undefined) {
+          budget.categoryIds = [budget.categoryId];
+          const category = await tx.table("categories").get(budget.categoryId);
+          budget.name = category ? category.name : "Anggaran";
+          delete budget.categoryId;
+        }
       });
     });
   }

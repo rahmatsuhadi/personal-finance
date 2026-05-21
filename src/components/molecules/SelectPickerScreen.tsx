@@ -22,7 +22,10 @@ interface SelectPickerScreenProps {
   title: string;
   options: SelectOption[];
   selectedValue?: string;
-  onSelect: (value: string, option: SelectOption) => void;
+  selectedValues?: string[];
+  multiple?: boolean;
+  onSelect?: (value: string, option: SelectOption) => void;
+  onSelectMultiple?: (values: string[]) => void;
   onClose: () => void;
   /** Apakah membutuhkan search bar */
   searchable?: boolean;
@@ -34,12 +37,18 @@ export function SelectPickerScreen({
   title,
   options,
   selectedValue,
+  selectedValues,
+  multiple = false,
   onSelect,
+  onSelectMultiple,
   onClose,
   searchable = false,
   emptyMessage = "Tidak ada pilihan tersedia.",
 }: SelectPickerScreenProps) {
   const [query, setQuery] = useState("");
+  const [internalSelected, setInternalSelected] = useState<string[]>(
+    selectedValues || (selectedValue ? [selectedValue] : [])
+  );
 
   const filtered = searchable
     ? options.filter((o) =>
@@ -49,7 +58,20 @@ export function SelectPickerScreen({
     : options;
 
   function handleSelect(option: SelectOption) {
-    onSelect(option.value, option);
+    if (multiple) {
+      if (internalSelected.includes(option.value)) {
+        setInternalSelected(internalSelected.filter((v) => v !== option.value));
+      } else {
+        setInternalSelected([...internalSelected, option.value]);
+      }
+    } else {
+      if (onSelect) onSelect(option.value, option);
+      onClose();
+    }
+  }
+
+  function handleSaveMultiple() {
+    if (onSelectMultiple) onSelectMultiple(internalSelected);
     onClose();
   }
 
@@ -60,7 +82,6 @@ export function SelectPickerScreen({
     >
       {/* AppHeader */}
       <AppHeader title={title} onBack={onClose} />
-
 
       {/* Search Bar */}
       {searchable && (
@@ -99,7 +120,9 @@ export function SelectPickerScreen({
         ) : (
           <ul className="divide-y-2 divide-brutal-black border-b-2 border-brutal-black">
             {filtered.map((option) => {
-              const isSelected = option.value === selectedValue;
+              const isSelected = multiple
+                ? internalSelected.includes(option.value)
+                : option.value === selectedValue;
               return (
                 <li key={option.value}>
                   <button
@@ -166,6 +189,17 @@ export function SelectPickerScreen({
           </ul>
         )}
       </div>
+
+      {multiple && (
+        <div className="border-t-2 border-brutal-black bg-brutal-white p-4 pb-8 sticky bottom-0 z-10">
+          <button
+            onClick={handleSaveMultiple}
+            className="w-full py-3 border-2 border-brutal-black bg-brutal-emerald shadow-brutal-sm text-sm font-black uppercase tracking-wider brutal-press flex items-center justify-center gap-2"
+          >
+            Simpan Pilihan ({internalSelected.length})
+          </button>
+        </div>
+      )}
     </div>
   );
 }

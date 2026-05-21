@@ -14,6 +14,18 @@ export const categoryRepository = {
   },
 
   async remove(id: number) {
-    return await db.categories.delete(id);
+    await db.transaction("rw", db.categories, db.budgets, async () => {
+      const affectedBudgets = await db.budgets.where("categoryIds").equals(id).toArray();
+      for (const b of affectedBudgets) {
+        if (!b.id) continue;
+        const newIds = b.categoryIds.filter((cId) => cId !== id);
+        if (newIds.length === 0) {
+          await db.budgets.delete(b.id);
+        } else {
+          await db.budgets.update(b.id, { categoryIds: newIds });
+        }
+      }
+      await db.categories.delete(id);
+    });
   },
 };
