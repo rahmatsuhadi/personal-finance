@@ -82,7 +82,6 @@ export function CategoryListScreen() {
         ) : (
           activeCategories.map((cat) => {
             const IconComp = cat.icon ? (LucideIcons as any)[cat.icon] : LucideIcons.Tag;
-            const bgClass = cat.colorClass ? `bg-${cat.colorClass.replace('brutal-', '')}` : "bg-yellow"; // Just to ensure safe arbitrary string fallback, actually we can just use inline styles for opacity or tailwind arbitrary values if known.
 
             return (
               <div
