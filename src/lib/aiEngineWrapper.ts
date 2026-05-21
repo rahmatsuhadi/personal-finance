@@ -1,5 +1,5 @@
-import { db } from "@/db/db";
-import { financialContextLib } from "@/lib/financialContextLib";
+// import { db } from "@/db/db";
+// import { financialContextLib } from "@/lib/financialContextLib";
 import type { AiResponseResult } from "@/types";
 import { parseTransactionQuery } from "@/utlis/aiParser";
 import { generateResponse } from "@/utlis/localParser";
