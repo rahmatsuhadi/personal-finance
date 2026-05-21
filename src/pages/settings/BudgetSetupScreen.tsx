@@ -31,10 +31,7 @@ export function BudgetSetupScreen() {
   };
 
   return (
-    <div
-      className="flex flex-col min-h-full bg-brutal-bg pb-24"
-      style={{ paddingTop: "var(--safe-top)" }}
-    >
+    <div className="flex flex-col h-full bg-brutal-bg">
       <AppHeader
         title="Atur Anggaran"
         bgColor="bg-brutal-orange"
@@ -50,7 +47,7 @@ export function BudgetSetupScreen() {
       />
 
 
-      <div className="p-4 flex flex-col gap-3">
+      <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-3 pb-24">
         {budgets.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-20 opacity-50">
             <p className="text-sm font-bold uppercase text-center">Belum ada anggaran.</p>

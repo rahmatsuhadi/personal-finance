@@ -28,10 +28,7 @@ export function CategoryListScreen() {
   }
 
   return (
-    <div
-      className="flex flex-col min-h-full bg-brutal-bg pb-24"
-      style={{ paddingTop: "var(--safe-top)" }}
-    >
+    <div className="flex flex-col h-full bg-brutal-bg">
       {/* Header */}
       <AppHeader
         title="Kelola Kategori"
@@ -48,7 +45,7 @@ export function CategoryListScreen() {
       />
 
       {/* Tabs */}
-      <div className="flex border-b-2 border-brutal-black divide-x-2 divide-brutal-black bg-brutal-bg sticky top-0 z-10">
+      <div className="flex border-b-2 border-brutal-black divide-x-2 divide-brutal-black bg-brutal-bg z-10">
         <button
           onClick={() => setActiveTab("expense")}
           className={cn(
@@ -74,7 +71,7 @@ export function CategoryListScreen() {
       </div>
 
       {/* Category List */}
-      <div className="p-4 flex flex-col gap-3">
+      <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-3 pb-24">
         {activeCategories.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-20 opacity-50">
             <p className="text-sm font-bold uppercase">Belum ada kategori.</p>

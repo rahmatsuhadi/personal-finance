@@ -103,22 +103,15 @@ export function BudgetFormScreen() {
   });
 
   return (
-    <div
-      className="flex flex-col min-h-full bg-brutal-bg pb-24"
-      style={{ paddingTop: "var(--safe-top)" }}
-    >
+    <div className="flex flex-col h-full bg-brutal-bg">
       <AppHeader
-        title={isEditMode ? "Ubah Anggaran" : "Tambah Anggaran"}
+        title={isEditMode ? "Edit Anggaran" : "Tambah Anggaran"}
         bgColor="bg-brutal-orange"
         onBack={() => navigate(-1)}
       />
 
-      <div className="p-4 flex flex-col gap-6">
-        {errors.form && (
-          <div className="p-3 border-2 border-brutal-black bg-brutal-rose text-white text-xs font-bold shadow-brutal-sm">
-            {errors.form}
-          </div>
-        )}
+      <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-5 pb-24">
+
 
         {/* Name Input */}
         <div className="flex flex-col gap-1.5">

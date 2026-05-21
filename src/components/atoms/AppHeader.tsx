@@ -25,7 +25,7 @@ export function AppHeader({
   return (
     <div
       className={cn(
-        "flex items-center gap-3 border-b-4 border-brutal-black px-4",
+        "sticky top-0 z-50 flex items-center gap-3 border-b-4 border-brutal-black px-4",
         bgColor,
         "pt-[calc(var(--safe-top)+12px)] pb-3",
         className
