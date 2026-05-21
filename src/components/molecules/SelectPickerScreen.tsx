@@ -13,7 +13,7 @@ export interface SelectOption {
   /** Optional warna blok/badge kiri */
   accentColor?: string;
   /** Optional emoji/icon prefix */
-  prefix?: string;
+  prefix?: React.ReactNode | string;
 }
 
 // ─── SelectPickerScreen ───────────────────────────────────────────────────────

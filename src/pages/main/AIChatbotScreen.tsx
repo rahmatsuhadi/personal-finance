@@ -41,7 +41,7 @@ export function AIChatbotScreen() {
       id: mkId(),
       role: "ai",
       content:
-        "👋 Halo! Aku **Fin**, asisten keuangan pintarmu. Aku bisa bantu kamu memahami kondisi keuanganmu.\n\nApa yang ingin kamu tanyakan hari ini?",
+        "Halo! Aku **Fin**, asisten keuangan pintarmu. Aku bisa bantu kamu memahami kondisi keuanganmu.\n\nApa yang ingin kamu tanyakan hari ini?",
       timestamp: new Date(),
     },
   ]);

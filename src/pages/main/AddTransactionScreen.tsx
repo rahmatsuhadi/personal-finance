@@ -15,6 +15,7 @@ import {
   ArrowLeftRight,
   Check,
 } from "lucide-react";
+import * as LucideIcons from "lucide-react";
 import { format } from "date-fns";
 import { liveQuery } from "dexie";
 import { db, type Category } from "@/db/db";
@@ -520,7 +521,18 @@ export function AddTransactionScreen() {
         <div className="absolute inset-0 z-[70]">
           <SelectPickerScreen
             title="Pilih Kategori"
-            options={categories.map((c) => ({ value: c.name, label: c.name }))}
+            options={categories.map((c) => {
+              const IconComp = c.icon ? (LucideIcons as any)[c.icon] : LucideIcons.Tag;
+              return {
+                value: c.name,
+                label: c.name,
+                prefix: IconComp ? (
+                  <div className={cn("flex h-8 w-8 shrink-0 items-center justify-center border-2 border-brutal-black", c.colorClass ? `bg-${c.colorClass}` : "bg-brutal-yellow")}>
+                    <IconComp size={14} strokeWidth={2.5} className="text-white" />
+                  </div>
+                ) : undefined
+              };
+            })}
             selectedValue={categoryValue}
             searchable={categories.length > 6}
             emptyMessage="Belum ada kategori tersedia."

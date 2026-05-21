@@ -1,11 +1,11 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { useWallets } from "@/hooks/useWallets";
 import { useTransactions, type FilterType, type FilterPeriod } from "@/hooks/useTransactions";
 import { TransactionGroup } from "@/components/molecules/TransactionItem";
 import { WalletCard } from "@/components/molecules/WalletCard";
 import { BrutalButton } from "@/components/atoms/BrutalButton";
-import { SlidersHorizontal, TrendingUp, TrendingDown, Wallet, Sparkles } from "lucide-react";
+import { SlidersHorizontal, TrendingUp, TrendingDown, Wallet, Sparkles, Inbox } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useNavigate } from "react-router-dom";
 import { type Transaction } from "@/db/db";
@@ -38,20 +38,29 @@ const PERIOD_OPTIONS: { label: string; value: FilterPeriod }[] = [
 interface FilterDrawerProps {
   open: boolean;
   onClose: () => void;
-  filterType: FilterType;
-  filterPeriod: FilterPeriod;
-  onTypeChange: (v: FilterType) => void;
-  onPeriodChange: (v: FilterPeriod) => void;
+  currentType: FilterType;
+  currentPeriod: FilterPeriod;
+  onApply: (type: FilterType, period: FilterPeriod) => void;
 }
 
 function FilterDrawer({
   open,
   onClose,
-  filterType,
-  filterPeriod,
-  onTypeChange,
-  onPeriodChange,
+  currentType,
+  currentPeriod,
+  onApply,
 }: FilterDrawerProps) {
+  const [tempType, setTempType] = useState<FilterType>(currentType);
+  const [tempPeriod, setTempPeriod] = useState<FilterPeriod>(currentPeriod);
+
+  // Sync temp state when drawer opens with fresh current props
+  useEffect(() => {
+    if (open) {
+      setTempType(currentType);
+      setTempPeriod(currentPeriod);
+    }
+  }, [open, currentType, currentPeriod]);
+
   if (!open) return null;
 
   return (
@@ -89,11 +98,11 @@ function FilterDrawer({
               {TYPE_OPTIONS.map((opt) => (
                 <button
                   key={opt.value}
-                  onClick={() => onTypeChange(opt.value)}
+                  onClick={() => setTempType(opt.value)}
                   className={cn(
                     "flex-1 border-2 border-brutal-black px-3 py-2",
                     "text-xs font-bold uppercase tracking-wider brutal-press",
-                    filterType === opt.value
+                    tempType === opt.value
                       ? "bg-brutal-black text-brutal-lime shadow-brutal-sm"
                       : "bg-brutal-white text-brutal-black shadow-brutal-sm"
                   )}
@@ -113,11 +122,11 @@ function FilterDrawer({
               {PERIOD_OPTIONS.map((opt) => (
                 <button
                   key={opt.value}
-                  onClick={() => onPeriodChange(opt.value)}
+                  onClick={() => setTempPeriod(opt.value)}
                   className={cn(
                     "border-2 border-brutal-black px-3 py-2",
                     "text-xs font-bold uppercase tracking-wider brutal-press",
-                    filterPeriod === opt.value
+                    tempPeriod === opt.value
                       ? "bg-brutal-black text-brutal-lime shadow-brutal-sm"
                       : "bg-brutal-white text-brutal-black shadow-brutal-sm"
                   )}
@@ -132,7 +141,7 @@ function FilterDrawer({
             variant="primary"
             size="md"
             fullWidth
-            onClick={onClose}
+            onClick={() => onApply(tempType, tempPeriod)}
           >
             Terapkan Filter
           </BrutalButton>
@@ -205,7 +214,7 @@ export function HomeScreen() {
               Selamat Datang,
             </p>
             <h1 className="text-2xl font-black text-white leading-tight">
-              {firstName} 
+              {firstName}
             </h1>
           </div>
           {/* Action buttons: Chatbot + Filter */}
@@ -295,10 +304,10 @@ export function HomeScreen() {
             {filterPeriod === "day"
               ? "Hari Ini"
               : filterPeriod === "week"
-              ? "Minggu Ini"
-              : filterPeriod === "month"
-              ? "Bulan Ini"
-              : "Tahun Ini"}{" "}
+                ? "Minggu Ini"
+                : filterPeriod === "month"
+                  ? "Bulan Ini"
+                  : "Tahun Ini"}{" "}
             · {filterType === "all" ? "Semua" : filterType === "income" ? "Pemasukan" : "Pengeluaran"}
           </span>
         </div>
@@ -306,7 +315,7 @@ export function HomeScreen() {
         {grouped.length === 0 ? (
           <div className="flex flex-col items-center justify-center flex-1 py-16 px-6">
             <div className="border-4 border-brutal-black bg-brutal-yellow p-6 shadow-brutal-lg mb-4">
-              <p className="text-4xl text-center">📭</p>
+              <Inbox size={48} strokeWidth={2.5} className="mx-auto text-brutal-black/80" />
             </div>
             <p className="text-sm font-black uppercase tracking-wider text-center">
               Belum Ada Transaksi
@@ -333,10 +342,13 @@ export function HomeScreen() {
       <FilterDrawer
         open={drawerOpen}
         onClose={() => setDrawerOpen(false)}
-        filterType={filterType}
-        filterPeriod={filterPeriod}
-        onTypeChange={setFilterType}
-        onPeriodChange={setFilterPeriod}
+        currentType={filterType}
+        currentPeriod={filterPeriod}
+        onApply={(type, period) => {
+          setFilterType(type);
+          setFilterPeriod(period);
+          setDrawerOpen(false);
+        }}
       />
     </div>
   );
