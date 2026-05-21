@@ -2,7 +2,6 @@ import { useState, useEffect } from "react";
 import { liveQuery } from "dexie";
 import { db, type Transaction } from "@/db/db";
 import { useNavigate } from "react-router-dom";
-import { TransactionDetailScreen } from "@/pages/main/TransactionDetailScreen";
 import { cn } from "@/lib/utils";
 import {
   format,
@@ -220,7 +219,7 @@ export function CalendarScreen() {
         .toArray()
     ).subscribe({
       next: (data) => setAllTransactions(data),
-      error: () => {},
+      error: () => { },
     });
     return () => sub.unsubscribe();
   }, [currentMonth]);
@@ -365,8 +364,8 @@ export function CalendarScreen() {
                       isSelected
                         ? "text-brutal-black"
                         : isToday
-                        ? "text-brutal-black"
-                        : "text-brutal-black/50"
+                          ? "text-brutal-black"
+                          : "text-brutal-black/50"
                     )}
                   >
                     {summary.count} tx
