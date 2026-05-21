@@ -63,7 +63,7 @@ export function SettingsScreen() {
           </p>
           <div className="border-2 border-brutal-black bg-brutal-white p-4 shadow-brutal-md">
             <div className="flex items-center gap-4">
-              <div className="flex h-14 w-14 flex-shrink-0 items-center justify-center border-2 border-brutal-black bg-brutal-yellow shadow-brutal-sm">
+              <div className="flex h-14 w-14 shrink-0 items-center justify-center border-2 border-brutal-black bg-brutal-yellow shadow-brutal-sm">
                 <span className="text-2xl font-black">
                   {user?.name?.charAt(0).toUpperCase() ?? "?"}
                 </span>
@@ -150,7 +150,7 @@ export function SettingsScreen() {
           <div className="border-2 border-brutal-black bg-brutal-white p-4 shadow-brutal-sm">
             <div className="flex justify-between items-center mb-2">
               <span className="text-xs font-bold uppercase tracking-wider opacity-60">Versi</span>
-              <BrutalBadge>1.0.0</BrutalBadge>
+              <BrutalBadge>1.0.0-Dev</BrutalBadge>
             </div>
             <div className="flex justify-between items-center">
               <span className="text-xs font-bold uppercase tracking-wider opacity-60">Penyimpanan</span>

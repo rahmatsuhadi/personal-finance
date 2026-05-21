@@ -132,7 +132,7 @@ export function WalletFormModal({
           />
 
           {/* Currency */}
-          <div className="flex flex-col gap-1.5">
+          {/* <div className="flex flex-col gap-1.5">
             <label className="text-xs font-bold uppercase tracking-wider">Mata Uang</label>
             <div className="flex gap-2">
               {(["IDR", "USD"] as const).map((c) => (
@@ -150,7 +150,7 @@ export function WalletFormModal({
                 </button>
               ))}
             </div>
-          </div>
+          </div> */}
 
           {/* Color */}
           <div className="flex flex-col gap-2">

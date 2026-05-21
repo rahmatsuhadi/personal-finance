@@ -19,3 +19,9 @@ export interface ParsedTransaction {
   type: "expense" | "income";
   date: string; // YYYY-MM-DD
 }
+
+
+export interface AiResponseResult {
+  text: string;
+  metadata?: any;
+}

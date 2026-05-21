@@ -357,7 +357,7 @@ export function StatisticsScreen() {
               >
                 {/* Color swatch */}
                 <div
-                  className="h-4 w-4 flex-shrink-0 border-2 border-brutal-black"
+                  className="h-4 w-4 shrink-0 border-2 border-brutal-black"
                   style={{ backgroundColor: s.color }}
                 />
 

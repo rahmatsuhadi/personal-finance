@@ -1,6 +1,7 @@
+import { db } from "@/db/db";
 import type { ParsedTransaction } from "@/types";
 
-export function parseTransactionQuery(query: string): ParsedTransaction | null {
+export async function parseTransactionQuery(query: string): Promise<ParsedTransaction | null> {
   const q = query.toLowerCase().trim();
   
   // Deteksi kata kunci pengeluaran  (beli, bayar, makan, dll)
@@ -21,11 +22,20 @@ export function parseTransactionQuery(query: string): ParsedTransaction | null {
     }
   }
 
-  //  Ekstraksi Wallet/Dompet (dana, gopay, cash)
-  let walletName = "Utama";
-  if (q.includes("dana")) walletName = "DANA";
-  else if (q.includes("gopay")) walletName = "GoPay";
-  else if (q.includes("cash") || q.includes("tunai")) walletName = "Tunai";
+  const activeWallets = await db.wallets.toArray();
+
+  let walletName = activeWallets.length > 0 ? activeWallets[0].name : "Utama";
+
+  for (const wallet of activeWallets) {
+    const lowerWalletName = wallet.name.toLowerCase();
+    
+    // Jika kalimat user mengandung nama dompet di database (misal user punya dompet bernama "Bank Jago")
+    if (q.includes(lowerWalletName)) {
+      walletName = wallet.name; // Kunci nama aslinya sesuai casing di DB (e.g., "Bank Jago")
+      break;
+    }
+  }
+  
 
   //  Ekstraksi Deskripsi (Ambil kata setelah beli/bayar atau sebelum angka)
   let description = "Transaksi Otomatis";
