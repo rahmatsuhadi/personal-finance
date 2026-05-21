@@ -1,7 +1,6 @@
 import { useState, useEffect } from "react";
 import { useWallets } from "@/hooks/useWallets";
 import { useTransactions } from "@/hooks/useTransactions";
-import { useStack } from "@/navigation/StackNavigator";
 import { BrutalButton } from "@/components/atoms/BrutalButton";
 import { BrutalInput } from "@/components/atoms/BrutalInput";
 import { SelectField } from "@/components/atoms/SelectField";
@@ -108,11 +107,11 @@ function SuccessToast({ visible }: { visible: boolean }) {
 export function AddTransactionScreen() {
   const { wallets } = useWallets();
   const { addTransaction } = useTransactions();
-  const { push } = useStack();
 
   const [activeType, setActiveType] = useState<TxType>("expense");
   const [categories, setCategories] = useState<Category[]>([]);
   const [showSuccess, setShowSuccess] = useState(false);
+  const [activePicker, setActivePicker] = useState<"category" | "wallet" | "fromWallet" | "toWallet" | null>(null);
 
   // ── Form State ───────────────────────────────────────────────────────────
   const [amount, setAmount] = useState("");
@@ -181,25 +180,7 @@ export function AddTransactionScreen() {
   // ── Stack Pickers ─────────────────────────────────────────────────────────
 
   function openCategoryPicker() {
-    const options: SelectOption[] = categories.map((c) => ({
-      value: c.name,
-      label: c.name,
-    }));
-
-    push(
-      <SelectPickerScreen
-        title="Pilih Kategori"
-        options={options}
-        selectedValue={categoryValue}
-        searchable={options.length > 6}
-        emptyMessage="Belum ada kategori tersedia."
-        onSelect={(val, opt) => {
-          setCategoryValue(val);
-          setCategoryLabel(opt.label);
-          setErrors((p) => ({ ...p, category: "" }));
-        }}
-      />
-    );
+    setActivePicker("category");
   }
 
   function buildWalletOptions(excludeId?: string): SelectOption[] {
@@ -214,55 +195,15 @@ export function AddTransactionScreen() {
   }
 
   function openWalletPicker() {
-    push(
-      <SelectPickerScreen
-        title="Pilih Dompet"
-        options={buildWalletOptions()}
-        selectedValue={walletId}
-        emptyMessage="Belum ada dompet. Tambah dulu di tab Profil."
-        onSelect={(val, opt) => {
-          setWalletId(val);
-          setWalletLabel(opt.label);
-          setWalletHint(opt.sublabel ?? "");
-          setWalletColor(opt.accentColor ?? "");
-          setErrors((p) => ({ ...p, walletId: "" }));
-        }}
-      />
-    );
+    setActivePicker("wallet");
   }
 
   function openFromWalletPicker() {
-    push(
-      <SelectPickerScreen
-        title="Dari Dompet (Sumber)"
-        options={buildWalletOptions(toWalletId)}
-        selectedValue={fromWalletId}
-        emptyMessage="Belum ada dompet."
-        onSelect={(val, opt) => {
-          setFromWalletId(val);
-          setFromWalletLabel(opt.label);
-          setFromWalletColor(opt.accentColor ?? "");
-          setErrors((p) => ({ ...p, fromWalletId: "" }));
-        }}
-      />
-    );
+    setActivePicker("fromWallet");
   }
 
   function openToWalletPicker() {
-    push(
-      <SelectPickerScreen
-        title="Ke Dompet (Tujuan)"
-        options={buildWalletOptions(fromWalletId)}
-        selectedValue={toWalletId}
-        emptyMessage="Belum ada dompet."
-        onSelect={(val, opt) => {
-          setToWalletId(val);
-          setToWalletLabel(opt.label);
-          setToWalletColor(opt.accentColor ?? "");
-          setErrors((p) => ({ ...p, toWalletId: "" }));
-        }}
-      />
-    );
+    setActivePicker("toWallet");
   }
 
   // ── Validate & Submit ─────────────────────────────────────────────────────
@@ -574,6 +515,79 @@ export function AddTransactionScreen() {
           {isLoading ? "Menyimpan..." : `Simpan ${activeTab.label}`}
         </BrutalButton>
       </div>
+
+      {activePicker === "category" && (
+        <div className="absolute inset-0 z-[70]">
+          <SelectPickerScreen
+            title="Pilih Kategori"
+            options={categories.map((c) => ({ value: c.name, label: c.name }))}
+            selectedValue={categoryValue}
+            searchable={categories.length > 6}
+            emptyMessage="Belum ada kategori tersedia."
+            onSelect={(val, opt) => {
+              setCategoryValue(val);
+              setCategoryLabel(opt.label);
+              setErrors((p) => ({ ...p, category: "" }));
+            }}
+            onClose={() => setActivePicker(null)}
+          />
+        </div>
+      )}
+
+      {activePicker === "wallet" && (
+        <div className="absolute inset-0 z-[70]">
+          <SelectPickerScreen
+            title="Pilih Dompet"
+            options={buildWalletOptions()}
+            selectedValue={walletId}
+            emptyMessage="Belum ada dompet. Tambah dulu di tab Profil."
+            onSelect={(val, opt) => {
+              setWalletId(val);
+              setWalletLabel(opt.label);
+              setWalletHint(opt.sublabel ?? "");
+              setWalletColor(opt.accentColor ?? "");
+              setErrors((p) => ({ ...p, walletId: "" }));
+            }}
+            onClose={() => setActivePicker(null)}
+          />
+        </div>
+      )}
+
+      {activePicker === "fromWallet" && (
+        <div className="absolute inset-0 z-[70]">
+          <SelectPickerScreen
+            title="Dari Dompet (Sumber)"
+            options={buildWalletOptions(toWalletId)}
+            selectedValue={fromWalletId}
+            emptyMessage="Belum ada dompet."
+            onSelect={(val, opt) => {
+              setFromWalletId(val);
+              setFromWalletLabel(opt.label);
+              setFromWalletColor(opt.accentColor ?? "");
+              setErrors((p) => ({ ...p, fromWalletId: "" }));
+            }}
+            onClose={() => setActivePicker(null)}
+          />
+        </div>
+      )}
+
+      {activePicker === "toWallet" && (
+        <div className="absolute inset-0 z-[70]">
+          <SelectPickerScreen
+            title="Ke Dompet (Tujuan)"
+            options={buildWalletOptions(fromWalletId)}
+            selectedValue={toWalletId}
+            emptyMessage="Belum ada dompet."
+            onSelect={(val, opt) => {
+              setToWalletId(val);
+              setToWalletLabel(opt.label);
+              setToWalletColor(opt.accentColor ?? "");
+              setErrors((p) => ({ ...p, toWalletId: "" }));
+            }}
+            onClose={() => setActivePicker(null)}
+          />
+        </div>
+      )}
     </div>
   );
 }

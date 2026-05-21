@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { useStack } from "@/navigation/StackNavigator";
 import { AppHeader } from "@/components/atoms/AppHeader";
 import { cn } from "@/lib/utils";
 import { Search, Check } from "lucide-react";
@@ -24,6 +23,7 @@ interface SelectPickerScreenProps {
   options: SelectOption[];
   selectedValue?: string;
   onSelect: (value: string, option: SelectOption) => void;
+  onClose: () => void;
   /** Apakah membutuhkan search bar */
   searchable?: boolean;
   /** Pesan kosong jika tidak ada opsi */
@@ -35,10 +35,10 @@ export function SelectPickerScreen({
   options,
   selectedValue,
   onSelect,
+  onClose,
   searchable = false,
   emptyMessage = "Tidak ada pilihan tersedia.",
 }: SelectPickerScreenProps) {
-  const { pop } = useStack();
   const [query, setQuery] = useState("");
 
   const filtered = searchable
@@ -50,7 +50,7 @@ export function SelectPickerScreen({
 
   function handleSelect(option: SelectOption) {
     onSelect(option.value, option);
-    pop();
+    onClose();
   }
 
   return (
@@ -59,7 +59,8 @@ export function SelectPickerScreen({
       style={{ paddingTop: "var(--safe-top)" }}
     >
       {/* AppHeader */}
-      <AppHeader title={title} onBack={pop} />
+      <AppHeader title={title} onBack={onClose} />
+
 
       {/* Search Bar */}
       {searchable && (

@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { useStack } from "@/navigation/StackNavigator";
+import { useNavigate } from "react-router-dom";
 import { AppHeader } from "@/components/atoms/AppHeader";
 // import { db } from "@/db/db";
 import { cn } from "@/lib/utils";
@@ -35,7 +35,7 @@ const RECOMMENDED_PROMPTS = [
 // ─── AIChatbotScreen ──────────────────────────────────────────────────────────
 
 export function AIChatbotScreen() {
-  const { pop } = useStack();
+  const navigate = useNavigate();
   const [messages, setMessages] = useState<Message[]>([
     {
       id: mkId(),
@@ -108,7 +108,7 @@ export function AIChatbotScreen() {
       <AppHeader
         title="Fin — AI Asisten Keuangan"
         bgColor="bg-brutal-purple"
-        onBack={pop}
+        onBack={() => navigate(-1)}
         // action={
         //   <div className="flex h-8 w-8 items-center justify-center border-2 border-brutal-lime bg-transparent">
         //     <Sparkles size={14} strokeWidth={2.5} className="text-brutal-lime" />

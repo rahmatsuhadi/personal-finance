@@ -1,16 +1,18 @@
 import { useAuth } from "@/hooks/useAuth";
+import { Routes, Route, Navigate } from "react-router-dom";
 import { OnboardingScreen } from "@/pages/auth/OnboardingScreen";
 import { TabNavigator } from "@/navigation/TabNavigator";
-import { StackNavigator } from "@/navigation/StackNavigator";
 import { HomeScreen } from "@/pages/main/HomeScreen";
 import { CalendarScreen } from "@/pages/main/CalendarScreen";
 import { AddTransactionScreen } from "@/pages/main/AddTransactionScreen";
 import { StatisticsScreen } from "@/pages/main/StatisticsScreen";
 import { SettingsScreen } from "@/pages/main/SettingsScreen";
+import { TransactionDetailScreen } from "@/pages/main/TransactionDetailScreen";
+import { EditTransactionScreen } from "@/pages/main/EditTransactionScreen";
+import { AIChatbotScreen } from "@/pages/main/AIChatbotScreen";
 
 // ─── AppNavigator ─────────────────────────────────────────────────────────────
 // Root conditional router — checks user profile in DB to decide which flow to show.
-// StackNavigator wraps everything so any screen can push stack pages.
 
 export function AppNavigator() {
   const { isLoading, isAuthenticated } = useAuth();
@@ -28,14 +30,19 @@ export function AppNavigator() {
     );
   }
 
-  // Not authenticated → Onboarding (no stack needed)
+  // Not authenticated → Onboarding
   if (!isAuthenticated) {
-    return <OnboardingScreen />;
+    return (
+      <Routes>
+        <Route path="/onboarding" element={<OnboardingScreen />} />
+        <Route path="*" element={<Navigate to="/onboarding" replace />} />
+      </Routes>
+    );
   }
 
-  // Authenticated → Main App wrapped in StackNavigator
+  // Authenticated → Main App with TabNavigator and Stack Screens
   return (
-    <StackNavigator>
+    <div className="relative h-dvh w-full overflow-hidden">
       <TabNavigator
         screens={{
           home: <HomeScreen />,
@@ -45,6 +52,25 @@ export function AppNavigator() {
           settings: <SettingsScreen />,
         }}
       />
-    </StackNavigator>
+      
+      {/* Stack screens on top of TabNavigator */}
+      <Routes>
+        <Route path="/transaction/:id" element={
+          <div className="absolute inset-0 z-[60] bg-brutal-bg animate-in slide-in-from-right duration-250 ease-out">
+            <TransactionDetailScreen />
+          </div>
+        } />
+        <Route path="/transaction/edit/:id" element={
+          <div className="absolute inset-0 z-[60] bg-brutal-bg animate-in slide-in-from-right duration-250 ease-out">
+            <EditTransactionScreen />
+          </div>
+        } />
+        <Route path="/ai-chat" element={
+          <div className="absolute inset-0 z-[60] bg-brutal-bg animate-in slide-in-from-right duration-250 ease-out">
+            <AIChatbotScreen />
+          </div>
+        } />
+      </Routes>
+    </div>
   );
 }

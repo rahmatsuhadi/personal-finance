@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { liveQuery } from "dexie";
 import { db, type Transaction } from "@/db/db";
-import { useStack } from "@/navigation/StackNavigator";
+import { useNavigate } from "react-router-dom";
 import { TransactionDetailScreen } from "@/pages/main/TransactionDetailScreen";
 import { cn } from "@/lib/utils";
 import {
@@ -200,7 +200,7 @@ function DayDrawer({
 // ─── CalendarScreen ───────────────────────────────────────────────────────────
 
 export function CalendarScreen() {
-  const { push } = useStack();
+  const navigate = useNavigate();
   const today = new Date();
 
   const [currentMonth, setCurrentMonth] = useState<Date>(
@@ -260,7 +260,7 @@ export function CalendarScreen() {
 
   function handleTxClick(tx: Transaction) {
     setSelectedDate(null);
-    push(<TransactionDetailScreen transaction={tx} />);
+    navigate(`/transaction/${tx.id}`);
   }
 
   const monthLabel = format(currentMonth, "MMMM yyyy", { locale: idLocale });

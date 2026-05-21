@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
+import { useParams, useNavigate } from "react-router-dom";
 import { useWallets } from "@/hooks/useWallets";
-import { useStack } from "@/navigation/StackNavigator";
 import { AppHeader } from "@/components/atoms/AppHeader";
 import { BrutalButton } from "@/components/atoms/BrutalButton";
 import { BrutalInput } from "@/components/atoms/BrutalInput";
@@ -88,52 +88,63 @@ const COLOR_HEX: Record<string, string> = {
 
 // ─── EditTransactionScreen ────────────────────────────────────────────────────
 
-interface EditTransactionScreenProps {
-  transaction: Transaction;
-  /** Called after successful update so parent can refresh */
-  onUpdated?: () => void;
-}
+export function EditTransactionScreen() {
+  const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
 
-export function EditTransactionScreen({
-  transaction,
-  onUpdated,
-}: EditTransactionScreenProps) {
   const { wallets } = useWallets();
   const { updateTransaction, removeTransaction } = useTransactions();
-  const { pop, push } = useStack();
   const [deleteOpen, setDeleteOpen] = useState(false);
+  const [transaction, setTransaction] = useState<Transaction | null>(null);
 
-  const [activeType, setActiveType] = useState<TxType>(transaction.type);
+  const [activeType, setActiveType] = useState<TxType>("expense");
   const [categories, setCategories] = useState<Category[]>([]);
+  const [activePicker, setActivePicker] = useState<"category" | "wallet" | "fromWallet" | "toWallet" | null>(null);
 
-  // Form state — pre-filled
-  const [amount, setAmount] = useState(
-    transaction.amount > 0 ? formatRupiah(String(transaction.amount)) : ""
-  );
-  const [description, setDescription] = useState(transaction.description);
-  const [categoryValue, setCategoryValue] = useState(transaction.category);
-  const [categoryLabel, setCategoryLabel] = useState(transaction.category);
-  const [walletId, setWalletId] = useState(String(transaction.walletId ?? ""));
+  // Form state
+  const [amount, setAmount] = useState("");
+  const [description, setDescription] = useState("");
+  const [categoryValue, setCategoryValue] = useState("");
+  const [categoryLabel, setCategoryLabel] = useState("");
+  const [walletId, setWalletId] = useState("");
   const [walletLabel, setWalletLabel] = useState("");
   const [walletHint, setWalletHint] = useState("");
   const [walletColor, setWalletColor] = useState("");
-  const [fromWalletId, setFromWalletId] = useState(
-    String(transaction.fromWalletId ?? "")
-  );
+  const [fromWalletId, setFromWalletId] = useState("");
   const [fromWalletLabel, setFromWalletLabel] = useState("");
   const [fromWalletColor, setFromWalletColor] = useState("");
-  const [toWalletId, setToWalletId] = useState(
-    String(transaction.toWalletId ?? "")
-  );
+  const [toWalletId, setToWalletId] = useState("");
   const [toWalletLabel, setToWalletLabel] = useState("");
   const [toWalletColor, setToWalletColor] = useState("");
-  const [transferFee, setTransferFee] = useState(
-    transaction.transferFee ? formatRupiah(String(transaction.transferFee)) : ""
-  );
-  const [notes, setNotes] = useState(transaction.notes ?? "");
-  const [date, setDate] = useState(transaction.date);
+  const [transferFee, setTransferFee] = useState("");
+  const [notes, setNotes] = useState("");
+  const [date, setDate] = useState("");
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isLoading, setIsLoading] = useState(false);
+
+  // Load transaction
+  useEffect(() => {
+    if (id) {
+      db.transactions.get(parseInt(id)).then((tx) => {
+        if (tx) {
+          setTransaction(tx);
+          setActiveType(tx.type);
+          setAmount(tx.amount > 0 ? formatRupiah(String(tx.amount)) : "");
+          setDescription(tx.description);
+          setCategoryValue(tx.category);
+          setCategoryLabel(tx.category);
+          setWalletId(String(tx.walletId ?? ""));
+          setFromWalletId(String(tx.fromWalletId ?? ""));
+          setToWalletId(String(tx.toWalletId ?? ""));
+          setTransferFee(tx.transferFee ? formatRupiah(String(tx.transferFee)) : "");
+          setNotes(tx.notes ?? "");
+          setDate(tx.date);
+        } else {
+          navigate(-1);
+        }
+      });
+    }
+  }, [id, navigate]);
 
   // Pre-fill wallet labels from wallets list
   useEffect(() => {
@@ -182,75 +193,27 @@ export function EditTransactionScreen({
   }
 
   function openCategoryPicker() {
-    push(
-      <SelectPickerScreen
-        title="Pilih Kategori"
-        options={categories.map((c) => ({ value: c.name, label: c.name }))}
-        selectedValue={categoryValue}
-        searchable={categories.length > 6}
-        onSelect={(val) => {
-          setCategoryValue(val);
-          setCategoryLabel(val);
-          setErrors((p) => ({ ...p, category: "" }));
-        }}
-      />
-    );
+    setActivePicker("category");
   }
 
   function openWalletPicker() {
-    push(
-      <SelectPickerScreen
-        title="Pilih Dompet"
-        options={walletOptions()}
-        selectedValue={walletId}
-        onSelect={(val, opt) => {
-          setWalletId(val);
-          setWalletLabel(opt.label);
-          setWalletHint(opt.sublabel ?? "");
-          setWalletColor(opt.accentColor ?? "");
-          setErrors((p) => ({ ...p, walletId: "" }));
-        }}
-      />
-    );
+    setActivePicker("wallet");
   }
 
   function openFromPicker() {
-    push(
-      <SelectPickerScreen
-        title="Dari Dompet (Sumber)"
-        options={walletOptions(toWalletId)}
-        selectedValue={fromWalletId}
-        onSelect={(val, opt) => {
-          setFromWalletId(val);
-          setFromWalletLabel(opt.label);
-          setFromWalletColor(opt.accentColor ?? "");
-          setErrors((p) => ({ ...p, fromWalletId: "" }));
-        }}
-      />
-    );
+    setActivePicker("fromWallet");
   }
 
   function openToPicker() {
-    push(
-      <SelectPickerScreen
-        title="Ke Dompet (Tujuan)"
-        options={walletOptions(fromWalletId)}
-        selectedValue={toWalletId}
-        onSelect={(val, opt) => {
-          setToWalletId(val);
-          setToWalletLabel(opt.label);
-          setToWalletColor(opt.accentColor ?? "");
-          setErrors((p) => ({ ...p, toWalletId: "" }));
-        }}
-      />
-    );
+    setActivePicker("toWallet");
   }
 
   async function handleDeleteConfirm() {
-    await removeTransaction(transaction.id!);
-    onUpdated?.();
-    setDeleteOpen(false);
-    pop();
+    if (transaction) {
+      await removeTransaction(transaction.id!);
+      setDeleteOpen(false);
+      navigate(-1);
+    }
   }
 
   async function handleSave() {
@@ -295,9 +258,8 @@ export function EditTransactionScreen({
             notes: notes.trim() || undefined,
           };
 
-      await updateTransaction(transaction.id!, changes);
-      onUpdated?.();
-      pop();
+      await updateTransaction(transaction!.id!, changes);
+      navigate(-1);
     } catch (e) {
       console.error(e);
     } finally {
@@ -307,6 +269,14 @@ export function EditTransactionScreen({
 
   const activeTab = TAB_CONFIG.find((t) => t.type === activeType)!;
 
+  if (!transaction) {
+    return (
+      <div className="flex h-dvh items-center justify-center bg-brutal-bg">
+        <p className="font-bold">Loading...</p>
+      </div>
+    );
+  }
+
   return (
     <div
       className="flex flex-col h-dvh bg-brutal-bg"
@@ -314,7 +284,7 @@ export function EditTransactionScreen({
     >
       <AppHeader
         title="Edit Transaksi"
-        onBack={pop}
+        onBack={() => navigate(-1)}
         action={
           <button
             onClick={() => setDeleteOpen(true)}
@@ -485,6 +455,77 @@ export function EditTransactionScreen({
         onConfirm={handleDeleteConfirm}
         onCancel={() => setDeleteOpen(false)}
       />
+
+      {/* Stack Pickers Inline */}
+      {activePicker === "category" && (
+        <div className="absolute inset-0 z-[70]">
+          <SelectPickerScreen
+            title="Pilih Kategori"
+            options={categories.map((c) => ({ value: c.name, label: c.name }))}
+            selectedValue={categoryValue}
+            searchable={categories.length > 6}
+            onSelect={(val) => {
+              setCategoryValue(val);
+              setCategoryLabel(val);
+              setErrors((p) => ({ ...p, category: "" }));
+            }}
+            onClose={() => setActivePicker(null)}
+          />
+        </div>
+      )}
+
+      {activePicker === "wallet" && (
+        <div className="absolute inset-0 z-[70]">
+          <SelectPickerScreen
+            title="Pilih Dompet"
+            options={walletOptions()}
+            selectedValue={walletId}
+            onSelect={(val, opt) => {
+              setWalletId(val);
+              setWalletLabel(opt.label);
+              setWalletHint(opt.sublabel ?? "");
+              setWalletColor(opt.accentColor ?? "");
+              setErrors((p) => ({ ...p, walletId: "" }));
+            }}
+            onClose={() => setActivePicker(null)}
+          />
+        </div>
+      )}
+
+      {activePicker === "fromWallet" && (
+        <div className="absolute inset-0 z-[70]">
+          <SelectPickerScreen
+            title="Dari Dompet (Sumber)"
+            options={walletOptions(toWalletId)}
+            selectedValue={fromWalletId}
+            onSelect={(val, opt) => {
+              setFromWalletId(val);
+              setFromWalletLabel(opt.label);
+              setFromWalletColor(opt.accentColor ?? "");
+              setErrors((p) => ({ ...p, fromWalletId: "" }));
+            }}
+            onClose={() => setActivePicker(null)}
+          />
+        </div>
+      )}
+
+      {activePicker === "toWallet" && (
+        <div className="absolute inset-0 z-[70]">
+          <SelectPickerScreen
+            title="Ke Dompet (Tujuan)"
+            options={walletOptions(fromWalletId)}
+            selectedValue={toWalletId}
+            onSelect={(val, opt) => {
+              setToWalletId(val);
+              setToWalletLabel(opt.label);
+              setToWalletColor(opt.accentColor ?? "");
+              setErrors((p) => ({ ...p, toWalletId: "" }));
+            }}
+            onClose={() => setActivePicker(null)}
+          />
+        </div>
+      )}
     </div>
   );
 }
+
