@@ -7,9 +7,7 @@ import { WalletCard } from "@/components/molecules/WalletCard";
 import { BrutalButton } from "@/components/atoms/BrutalButton";
 import { SlidersHorizontal, TrendingUp, TrendingDown, Wallet, Sparkles } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { useStack } from "@/navigation/StackNavigator";
-import { TransactionDetailScreen } from "@/pages/main/TransactionDetailScreen";
-import { AIChatbotScreen } from "@/pages/main/AIChatbotScreen";
+import { useNavigate } from "react-router-dom";
 import { type Transaction } from "@/db/db";
 
 // ─── Format currency ──────────────────────────────────────────────────────────
@@ -177,7 +175,7 @@ function MetricCard({ label, value, icon: Icon, bgColor }: MetricCardProps) {
 export function HomeScreen() {
   const { user } = useAuth();
   const { wallets, totalBalance, incomeTotal, expenseTotal } = useWallets();
-  const { push } = useStack();
+  const navigate = useNavigate();
   const [filterType, setFilterType] = useState<FilterType>("all");
   const [filterPeriod, setFilterPeriod] = useState<FilterPeriod>("month");
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -187,7 +185,7 @@ export function HomeScreen() {
   const firstName = user?.name?.split(" ")[0] ?? "Kamu";
 
   function handleTransactionClick(tx: Transaction) {
-    push(<TransactionDetailScreen transaction={tx} />);
+    navigate(`/transaction/${tx.id}`);
   }
 
   return (
@@ -215,7 +213,7 @@ export function HomeScreen() {
             {/* AI Chatbot button */}
             <button
               id="home-chatbot-btn"
-              onClick={() => push(<AIChatbotScreen />)}
+              onClick={() => navigate("/ai-chat")}
               className={cn(
                 "flex h-10 w-10 items-center justify-center",
                 "border-2 border-brutal-purple bg-brutal-purple brutal-press",

@@ -1,17 +1,16 @@
-import { useState } from "react";
-import { useStack } from "@/navigation/StackNavigator";
+import { useState, useEffect } from "react";
+import { useParams, useNavigate } from "react-router-dom";
 import { AppHeader } from "@/components/atoms/AppHeader";
 import { BrutalButton } from "@/components/atoms/BrutalButton";
 import { BrutalBadge } from "@/components/atoms/BrutalBadge";
 import { ConfirmModal } from "@/components/atoms/ConfirmModal";
 import { cn } from "@/lib/utils";
-import { type Transaction } from "@/db/db";
+import { db, type Transaction } from "@/db/db";
 import { useWallets } from "@/hooks/useWallets";
 import { useTransactions } from "@/hooks/useTransactions";
 import { format } from "date-fns";
 import { id as idLocale } from "date-fns/locale";
 import { Pencil, Trash2 } from "lucide-react";
-import { EditTransactionScreen } from "@/pages/main/EditTransactionScreen";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -64,32 +63,46 @@ const TYPE_META = {
 
 // ─── TransactionDetailScreen ──────────────────────────────────────────────────
 
-export function TransactionDetailScreen({ transaction }: { transaction: Transaction }) {
-  const { pop, push } = useStack();
+export function TransactionDetailScreen() {
+  const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
   const { wallets } = useWallets();
   const { removeTransaction } = useTransactions();
   const [deleteOpen, setDeleteOpen] = useState(false);
+  const [transaction, setTransaction] = useState<Transaction | null>(null);
 
-  const meta = TYPE_META[transaction.type];
+  useEffect(() => {
+    if (id) {
+      db.transactions.get(parseInt(id)).then((tx) => {
+        if (tx) setTransaction(tx);
+        else navigate(-1);
+      });
+    }
+  }, [id, navigate]);
 
-  function getWalletName(id?: number): string {
-    if (!id) return "—";
-    return wallets.find((w) => w.id === id)?.name ?? `Dompet #${id}`;
-  }
-
-  function handleEdit() {
-    push(
-      <EditTransactionScreen
-        transaction={transaction}
-        onUpdated={pop}
-      />
+  if (!transaction) {
+    return (
+      <div className="flex h-dvh items-center justify-center bg-brutal-bg">
+        <p className="font-bold">Loading...</p>
+      </div>
     );
   }
 
+  const meta = TYPE_META[transaction.type];
+
+  function getWalletName(wid?: number): string {
+    if (!wid) return "—";
+    return wallets.find((w) => w.id === wid)?.name ?? `Dompet #${wid}`;
+  }
+
+  function handleEdit() {
+    navigate(`/transaction/edit/${transaction!.id}`);
+  }
+
   async function handleDeleteConfirm() {
-    await removeTransaction(transaction.id!);
+    await removeTransaction(transaction!.id!);
     setDeleteOpen(false);
-    pop();
+    navigate(-1);
   }
 
   return (
@@ -99,7 +112,7 @@ export function TransactionDetailScreen({ transaction }: { transaction: Transact
     >
       <AppHeader
         title="Detail Transaksi"
-        onBack={pop}
+        onBack={() => navigate(-1)}
         action={
           <div className="flex gap-2">
             <button

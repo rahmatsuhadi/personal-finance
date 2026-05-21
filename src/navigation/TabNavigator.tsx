@@ -1,5 +1,6 @@
-import { useState, type ReactNode } from "react";
+import { type ReactNode } from "react";
 import { Home, Calendar, Plus, BarChart2, Settings } from "lucide-react";
+import { useLocation, useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
 
 // ─── Tab Types ────────────────────────────────────────────────────────────────
@@ -11,24 +12,26 @@ interface Tab {
   label: string;
   Icon: typeof Home;
   isSpecial?: boolean;
+  path: string;
 }
 
 const TABS: Tab[] = [
-  { id: "home", label: "Utama", Icon: Home },
-  { id: "calendar", label: "Kalender", Icon: Calendar },
-  { id: "add", label: "Tambah", Icon: Plus, isSpecial: true },
-  { id: "stats", label: "Statistik", Icon: BarChart2 },
-  { id: "settings", label: "Profil", Icon: Settings },
+  { id: "home", label: "Utama", Icon: Home, path: "/" },
+  { id: "calendar", label: "Kalender", Icon: Calendar, path: "/calendar" },
+  { id: "add", label: "Tambah", Icon: Plus, isSpecial: true, path: "/add" },
+  { id: "stats", label: "Statistik", Icon: BarChart2, path: "/stats" },
+  { id: "settings", label: "Profil", Icon: Settings, path: "/settings" },
 ];
 
 // ─── TabBar Component ─────────────────────────────────────────────────────────
 
 interface TabBarProps {
   activeTab: TabId;
-  onTabChange: (tab: TabId) => void;
 }
 
-function TabBar({ activeTab, onTabChange }: TabBarProps) {
+function TabBar({ activeTab }: TabBarProps) {
+  const navigate = useNavigate();
+
   return (
     <nav
       className={cn(
@@ -47,7 +50,7 @@ function TabBar({ activeTab, onTabChange }: TabBarProps) {
               <button
                 key={tab.id}
                 id={`tab-${tab.id}`}
-                onClick={() => onTabChange(tab.id)}
+                onClick={() => navigate(tab.path)}
                 className={cn(
                   "flex flex-1 flex-col items-center justify-center",
                   "border-l-2 border-r-2 border-brutal-black",
@@ -72,7 +75,7 @@ function TabBar({ activeTab, onTabChange }: TabBarProps) {
             <button
               key={tab.id}
               id={`tab-${tab.id}`}
-              onClick={() => onTabChange(tab.id)}
+              onClick={() => navigate(tab.path)}
               className={cn(
                 "flex flex-1 flex-col items-center justify-center gap-1",
                 "border-r-2 border-brutal-black transition-colors",
@@ -99,14 +102,19 @@ function TabBar({ activeTab, onTabChange }: TabBarProps) {
 
 interface TabNavigatorProps {
   screens: Record<TabId, ReactNode>;
-  defaultTab?: TabId;
 }
 
 export function TabNavigator({
   screens,
-  defaultTab = "home",
 }: TabNavigatorProps) {
-  const [activeTab, setActiveTab] = useState<TabId>(defaultTab);
+  const location = useLocation();
+  
+  // Determine active tab from URL path
+  let activeTab: TabId = "home";
+  if (location.pathname.startsWith("/calendar")) activeTab = "calendar";
+  else if (location.pathname.startsWith("/add")) activeTab = "add";
+  else if (location.pathname.startsWith("/stats")) activeTab = "stats";
+  else if (location.pathname.startsWith("/settings")) activeTab = "settings";
 
   return (
     <div className="relative flex h-dvh flex-col bg-brutal-bg">
@@ -126,7 +134,7 @@ export function TabNavigator({
       </div>
 
       {/* Bottom Tab Bar */}
-      <TabBar activeTab={activeTab} onTabChange={setActiveTab} />
+      <TabBar activeTab={activeTab} />
     </div>
   );
 }
