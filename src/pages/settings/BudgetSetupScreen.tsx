@@ -16,7 +16,6 @@ export function BudgetSetupScreen() {
   const { expenseCategories } = useCategories();
 
   const [deletingBudget, setDeletingBudget] = useState<Budget | null>(null);
-  const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   async function handleDeleteConfirm() {
     if (deletingBudget?.id) {
@@ -50,11 +49,6 @@ export function BudgetSetupScreen() {
         }
       />
 
-      {errorMsg && (
-        <div className="m-4 p-3 border-2 border-brutal-black bg-brutal-rose text-white font-bold text-sm">
-          {errorMsg}
-        </div>
-      )}
 
       <div className="p-4 flex flex-col gap-3">
         {budgets.length === 0 ? (

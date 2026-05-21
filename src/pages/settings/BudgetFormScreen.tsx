@@ -13,7 +13,6 @@ import { cn } from "@/lib/utils";
 import { useNavigate, useParams } from "react-router-dom";
 import { useBudgets } from "@/hooks/useBudgets";
 import { useCategories } from "@/hooks/useCategories";
-import { db } from "@/db/db";
 
 // Helpers
 function formatRupiah(raw: string): string {

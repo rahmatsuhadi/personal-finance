@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { AppHeader } from "@/components/atoms/AppHeader";
-import { useBudgetProgress, type BudgetProgress } from "@/hooks/useBudgetProgress";
+import { useBudgetProgress, } from "@/hooks/useBudgetProgress";
 import { formatIDR, cn } from "@/lib/utils";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
