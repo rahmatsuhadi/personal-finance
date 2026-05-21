@@ -19,7 +19,7 @@ import {
   subDays,
 } from "date-fns";
 import { id as idLocale } from "date-fns/locale";
-import { ChevronLeft, ChevronRight, X } from "lucide-react";
+import { ChevronLeft, ChevronRight, X, ArrowDown, ArrowUp, ArrowLeftRight, Inbox, CalendarDays } from "lucide-react";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -63,10 +63,10 @@ const DAY_LABELS = ["Sen", "Sel", "Rab", "Kam", "Jum", "Sab", "Min"];
 
 // ─── Transaction Drawer ───────────────────────────────────────────────────────
 
-const TYPE_ICON: Record<Transaction["type"], string> = {
-  income: "↓",
-  expense: "↑",
-  transfer: "⇄",
+const TYPE_ICON: Record<Transaction["type"], React.ReactNode> = {
+  income: <ArrowDown size={18} strokeWidth={2.5} />,
+  expense: <ArrowUp size={18} strokeWidth={2.5} />,
+  transfer: <ArrowLeftRight size={18} strokeWidth={2.5} />,
 };
 
 const TYPE_TEXT_COLOR: Record<Transaction["type"], string> = {
@@ -155,7 +155,7 @@ function DayDrawer({
         <div className="overflow-y-auto flex-1">
           {transactions.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-10 gap-2">
-              <p className="text-3xl">📭</p>
+              <Inbox size={48} strokeWidth={2.5} className="text-brutal-black/40 mb-2" />
               <p className="text-xs font-bold uppercase text-brutal-black/40">
                 Tidak ada transaksi hari ini
               </p>
@@ -401,7 +401,7 @@ export function CalendarScreen() {
       {/* Empty state */}
       {!selectedDate && (
         <div className="flex flex-col items-center justify-center flex-1 gap-2 p-6">
-          <p className="text-3xl">📅</p>
+          <CalendarDays size={48} strokeWidth={2.5} className="text-brutal-black/40 mb-2" />
           <p className="text-xs font-bold uppercase text-brutal-black/40 text-center">
             Ketuk tanggal untuk melihat transaksi
           </p>

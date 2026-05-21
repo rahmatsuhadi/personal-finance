@@ -4,6 +4,7 @@ import { db, type Transaction } from "@/db/db";
 import { cn } from "@/lib/utils";
 import { format, startOfMonth, endOfMonth, startOfYear, endOfYear } from "date-fns";
 import { id as idLocale } from "date-fns/locale";
+import { BarChart3 } from "lucide-react";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -312,7 +313,7 @@ export function StatisticsScreen() {
 
         {slices.length === 0 ? (
           <div className="flex flex-col items-center gap-2 py-8">
-            <p className="text-3xl">📊</p>
+            <BarChart3 size={48} strokeWidth={2.5} className="text-brutal-black/40 mb-2" />
             <p className="text-xs font-bold uppercase text-brutal-black/40 text-center">
               Belum ada data pengeluaran
             </p>

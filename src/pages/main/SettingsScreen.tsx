@@ -6,7 +6,8 @@ import { WalletFormModal } from "@/components/molecules/WalletFormModal";
 import { ConfirmModal } from "@/components/atoms/ConfirmModal";
 import { BrutalButton } from "@/components/atoms/BrutalButton";
 import { BrutalBadge } from "@/components/atoms/BrutalBadge";
-import { User, LogOut, Wallet, Plus, Trash2, Pencil } from "lucide-react";
+import { User, LogOut, Wallet, Plus, Trash2, Pencil, Tags } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import type { Wallet as WalletType } from "@/db/db";
 
 // ─── SettingsScreen ───────────────────────────────────────────────────────────
@@ -14,6 +15,7 @@ import type { Wallet as WalletType } from "@/db/db";
 export function SettingsScreen() {
   const { user, logout } = useAuth();
   const { wallets, addWallet, updateWallet, removeWallet } = useWallets();
+  const navigate = useNavigate();
 
   const [addModalOpen, setAddModalOpen] = useState(false);
   const [editingWallet, setEditingWallet] = useState<WalletType | null>(null);
@@ -140,6 +142,24 @@ export function SettingsScreen() {
               ))}
             </div>
           )}
+        </div>
+
+        {/* ── Categories Management ─────────────────────────────────────────── */}
+        <div className="p-4 border-t-2 border-brutal-black">
+          <button
+            onClick={() => navigate("/settings/categories")}
+            className="w-full border-2 border-brutal-black bg-brutal-white p-4 flex items-center justify-between brutal-press shadow-brutal-sm"
+          >
+            <div className="flex items-center gap-3">
+              <div className="h-10 w-10 bg-brutal-cyan border-2 border-brutal-black flex items-center justify-center">
+                <Tags size={18} strokeWidth={2.5} />
+              </div>
+              <div className="text-left">
+                <p className="text-sm font-bold uppercase">Kelola Kategori</p>
+                <p className="text-xs text-brutal-black/60">Ubah, tambah, atau hapus kategori</p>
+              </div>
+            </div>
+          </button>
         </div>
 
         {/* ── App Info ──────────────────────────────────────────────────────── */}

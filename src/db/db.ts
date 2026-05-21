@@ -33,6 +33,8 @@ export interface Category {
   id?: number;
   name: string;
   type: "income" | "expense";
+  icon?: string;
+  colorClass?: string;
 }
 
 // ─── Dexie Instance ──────────────────────────────────────────────────────────
@@ -53,6 +55,15 @@ class BrutalistFinanceDB extends Dexie {
         "++id, type, date, amount, description, category, walletId, fromWalletId, toWalletId, transferFee, notes",
       categories: "++id, name, type",
     });
+
+    this.version(2).stores({
+      categories: "++id, name, type",
+    }).upgrade(tx => {
+      return tx.table("categories").toCollection().modify(category => {
+        if (!category.icon) category.icon = "Tag";
+        if (!category.colorClass) category.colorClass = "brutal-yellow";
+      });
+    });
   }
 }
 
@@ -63,20 +74,20 @@ export const db = new BrutalistFinanceDB();
 
 let _seeded = false;
 
-const DEFAULT_CATEGORIES: { name: string; type: "income" | "expense" }[] = [
-  { name: "Gaji", type: "income" },
-  { name: "Bisnis", type: "income" },
-  { name: "Investasi", type: "income" },
-  { name: "Hadiah", type: "income" },
-  { name: "Lainnya (Pemasukan)", type: "income" },
-  { name: "Makanan & Minuman", type: "expense" },
-  { name: "Transportasi", type: "expense" },
-  { name: "Belanja", type: "expense" },
-  { name: "Tagihan & Utilitas", type: "expense" },
-  { name: "Hiburan", type: "expense" },
-  { name: "Kesehatan", type: "expense" },
-  { name: "Pendidikan", type: "expense" },
-  { name: "Lainnya (Pengeluaran)", type: "expense" },
+export const DEFAULT_CATEGORIES: Category[] = [
+  { name: "Gaji", type: "income", icon: "Banknote", colorClass: "brutal-emerald" },
+  { name: "Bisnis", type: "income", icon: "Briefcase", colorClass: "brutal-blue" },
+  { name: "Investasi", type: "income", icon: "TrendingUp", colorClass: "brutal-purple" },
+  { name: "Hadiah", type: "income", icon: "Gift", colorClass: "brutal-pink" },
+  { name: "Lainnya (Pemasukan)", type: "income", icon: "PlusCircle", colorClass: "brutal-cyan" },
+  { name: "Makanan & Minuman", type: "expense", icon: "Coffee", colorClass: "brutal-orange" },
+  { name: "Transportasi", type: "expense", icon: "Car", colorClass: "brutal-yellow" },
+  { name: "Belanja", type: "expense", icon: "ShoppingCart", colorClass: "brutal-rose" },
+  { name: "Tagihan & Utilitas", type: "expense", icon: "Zap", colorClass: "brutal-cyan" },
+  { name: "Hiburan", type: "expense", icon: "Film", colorClass: "brutal-purple" },
+  { name: "Kesehatan", type: "expense", icon: "HeartPulse", colorClass: "brutal-rose" },
+  { name: "Pendidikan", type: "expense", icon: "GraduationCap", colorClass: "brutal-blue" },
+  { name: "Lainnya (Pengeluaran)", type: "expense", icon: "MinusCircle", colorClass: "brutal-black" },
 ];
 
 export async function seedDefaultData() {
@@ -101,9 +112,19 @@ export async function seedDefaultData() {
     await db.categories.bulkDelete(toDelete);
   }
 
-  // Add any missing default categories
+  // Add any missing default categories and fix missing icons
   const existingCats = await db.categories.toArray();
   const existingKeys = new Set(existingCats.map((c) => `${c.type}::${c.name}`));
+
+  for (const c of existingCats) {
+    if (!c.icon || c.icon === "Tag") {
+      const def = DEFAULT_CATEGORIES.find(d => d.name === c.name && d.type === c.type);
+      if (def && c.id != null) {
+        await db.categories.update(c.id, { icon: def.icon, colorClass: def.colorClass });
+      }
+    }
+  }
+
   const missingCats = DEFAULT_CATEGORIES.filter(
     (c) => !existingKeys.has(`${c.type}::${c.name}`)
   );
