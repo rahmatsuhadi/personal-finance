@@ -126,7 +126,7 @@ export function BudgetDetailScreen() {
 
   if (!progress) {
     return (
-      <div className="flex flex-col min-h-dvh bg-brutal-bg" style={{ paddingTop: "var(--safe-top)" }}>
+      <div className="flex flex-col h-full bg-brutal-bg" style={{ paddingTop: "var(--safe-top)" }}>
         <AppHeader title="Detail Anggaran" bgColor="bg-brutal-bg" onBack={() => navigate(-1)} />
         <div className="flex-1 flex items-center justify-center">
           <p className="text-sm font-bold opacity-60">Memuat data anggaran...</p>
@@ -153,14 +153,14 @@ export function BudgetDetailScreen() {
   const budgetName = progress.budget.name || progress.categories[0]?.name || "Anggaran";
 
   return (
-    <div className="flex flex-col min-h-dvh bg-brutal-bg pb-24" style={{ paddingTop: "var(--safe-top)" }}>
+    <div className="flex flex-col h-full bg-brutal-bg" style={{ paddingTop: "var(--safe-top)" }}>
       <AppHeader
         title={`Analitik: ${budgetName}`}
         bgColor="bg-brutal-orange"
         onBack={() => navigate(-1)}
       />
 
-      <div className="p-4 flex flex-col gap-6">
+      <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-6 pb-24">
         {/* Ringkasan Anggaran */}
         <div className="flex gap-2">
           <div className="flex-1 border-2 border-brutal-black bg-brutal-white p-3 shadow-brutal-sm text-center">
