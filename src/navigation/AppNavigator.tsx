@@ -11,6 +11,9 @@ import { TransactionDetailScreen } from "@/pages/main/TransactionDetailScreen";
 import { EditTransactionScreen } from "@/pages/main/EditTransactionScreen";
 import { AIChatbotScreen } from "@/pages/main/AIChatbotScreen";
 import { CategoryListScreen } from "@/pages/settings/CategoryListScreen";
+import { BudgetSetupScreen } from "@/pages/settings/BudgetSetupScreen";
+import { BudgetFormScreen } from "@/pages/settings/BudgetFormScreen";
+import { BudgetDetailScreen } from "@/pages/main/BudgetDetailScreen";
 
 // ─── AppNavigator ─────────────────────────────────────────────────────────────
 // Root conditional router — checks user profile in DB to decide which flow to show.
@@ -69,6 +72,26 @@ export function AppNavigator() {
         <Route path="/settings/categories" element={
           <div className="absolute inset-0 z-[60] bg-brutal-bg animate-in slide-in-from-right duration-250 ease-out">
             <CategoryListScreen />
+          </div>
+        } />
+        <Route path="/settings/budgets" element={
+          <div className="absolute inset-0 z-[60] bg-brutal-bg animate-in slide-in-from-right duration-250 ease-out">
+            <BudgetSetupScreen />
+          </div>
+        } />
+        <Route path="/settings/budgets/add" element={
+          <div className="absolute inset-0 z-[70] bg-brutal-bg animate-in slide-in-from-right duration-250 ease-out">
+            <BudgetFormScreen />
+          </div>
+        } />
+        <Route path="/settings/budgets/edit/:id" element={
+          <div className="absolute inset-0 z-[70] bg-brutal-bg animate-in slide-in-from-right duration-250 ease-out">
+            <BudgetFormScreen />
+          </div>
+        } />
+        <Route path="/budgets/:id" element={
+          <div className="absolute inset-0 z-[60] bg-brutal-bg animate-in slide-in-from-right duration-250 ease-out">
+            <BudgetDetailScreen />
           </div>
         } />
         <Route path="/ai-chat" element={

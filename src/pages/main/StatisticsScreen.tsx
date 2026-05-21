@@ -4,7 +4,11 @@ import { db, type Transaction } from "@/db/db";
 import { cn } from "@/lib/utils";
 import { format, startOfMonth, endOfMonth, startOfYear, endOfYear } from "date-fns";
 import { id as idLocale } from "date-fns/locale";
-import { BarChart3 } from "lucide-react";
+import { BarChart3, Target } from "lucide-react";
+import * as LucideIcons from "lucide-react";
+import { useBudgetProgress } from "@/hooks/useBudgetProgress";
+import { BrutalProgressBar } from "@/components/atoms/BrutalProgressBar";
+import { useNavigate } from "react-router-dom";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -171,6 +175,9 @@ export function StatisticsScreen() {
   const [period, setPeriod] = useState<Period>("month");
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [activeIndex, setActiveIndex] = useState<number | null>(null);
+  const [viewMode, setViewMode] = useState<"category" | "budget">("category");
+  const { progresses } = useBudgetProgress();
+  const navigate = useNavigate();
 
   // Date range based on period
   const fromDate =
@@ -302,98 +309,175 @@ export function StatisticsScreen() {
         </div>
       </div>
 
-      {/* ── Pie Chart Section ────────────────────────────────────────────────── */}
-      <div className="flex flex-col items-center px-4 py-6 border-b-2 border-brutal-black">
-        <div className="flex items-center gap-2 mb-4 self-start">
-          <div className="h-3 w-3 bg-brutal-black border border-brutal-black" />
-          <p className="text-xs font-black uppercase tracking-wider">
-            Pengeluaran per Kategori
-          </p>
-        </div>
-
-        {slices.length === 0 ? (
-          <div className="flex flex-col items-center gap-2 py-8">
-            <BarChart3 size={48} strokeWidth={2.5} className="text-brutal-black/40 mb-2" />
-            <p className="text-xs font-bold uppercase text-brutal-black/40 text-center">
-              Belum ada data pengeluaran
-            </p>
-          </div>
-        ) : (
-          <>
-            {/* SVG Chart */}
-            <div className="border-2 border-brutal-black shadow-brutal-md p-2 bg-brutal-white mb-4">
-              <SvgPieChart
-                slices={slices}
-                activeIndex={activeIndex}
-                onSliceClick={handleSliceClick}
-                size={220}
-              />
-            </div>
-
-            {/* Dynamic Label */}
-            <div className="border-2 border-brutal-black bg-brutal-yellow px-4 py-2 shadow-brutal-sm w-full text-center">
-              <p className="text-xs font-black uppercase tracking-wider">
-                {chartLabel}
-              </p>
-            </div>
-          </>
-        )}
+      {/* ── View Toggle ──────────────────────────────────────────────────────── */}
+      <div className="flex border-b-2 border-brutal-black divide-x-2 divide-brutal-black bg-brutal-bg sticky top-[48px] z-10">
+        <button
+          onClick={() => setViewMode("category")}
+          className={cn(
+            "flex-1 py-3 text-sm font-black uppercase tracking-wider brutal-press flex items-center justify-center gap-2",
+            viewMode === "category"
+              ? "bg-brutal-black text-white"
+              : "bg-brutal-bg text-brutal-black"
+          )}
+        >
+          <BarChart3 size={16} strokeWidth={2.5} />
+          Grafik Kategori
+        </button>
+        <button
+          onClick={() => setViewMode("budget")}
+          className={cn(
+            "flex-1 py-3 text-sm font-black uppercase tracking-wider brutal-press flex items-center justify-center gap-2",
+            viewMode === "budget"
+              ? "bg-brutal-black text-white"
+              : "bg-brutal-bg text-brutal-black"
+          )}
+        >
+          <Target size={16} strokeWidth={2.5} />
+          Pantau Anggaran
+        </button>
       </div>
 
-      {/* ── Category Legend List ─────────────────────────────────────────────── */}
-      {slices.length > 0 && (
-        <div className="px-4 pt-4">
-          <p className="text-xs font-black uppercase tracking-wider mb-3 opacity-60">
-            Rincian Kategori
-          </p>
-          <div className="flex flex-col border-2 border-brutal-black divide-y-2 divide-brutal-black bg-brutal-white shadow-brutal-md">
-            {slices.map((s, i) => (
-              <button
-                key={s.label}
-                onClick={() => handleSliceClick(i)}
-                className={cn(
-                  "flex items-center gap-3 px-4 py-3 text-left brutal-press",
-                  activeIndex === i ? "bg-brutal-black" : "bg-transparent"
-                )}
-              >
-                {/* Color swatch */}
-                <div
-                  className="h-4 w-4 shrink-0 border-2 border-brutal-black"
-                  style={{ backgroundColor: s.color }}
-                />
+      {viewMode === "category" ? (
+        <>
+          {/* ── Pie Chart Section ────────────────────────────────────────────────── */}
+          <div className="flex flex-col items-center px-4 py-6 border-b-2 border-brutal-black">
+            <div className="flex items-center gap-2 mb-4 self-start">
+              <div className="h-3 w-3 bg-brutal-black border border-brutal-black" />
+              <p className="text-xs font-black uppercase tracking-wider">
+                Pengeluaran per Kategori
+              </p>
+            </div>
 
-                {/* Label */}
-                <span
-                  className={cn(
-                    "flex-1 text-sm font-bold",
-                    activeIndex === i ? "text-brutal-lime" : "text-brutal-black"
-                  )}
-                >
-                  {s.label}
-                </span>
+            {slices.length === 0 ? (
+              <div className="flex flex-col items-center gap-2 py-8">
+                <BarChart3 size={48} strokeWidth={2.5} className="text-brutal-black/40 mb-2" />
+                <p className="text-xs font-bold uppercase text-brutal-black/40 text-center">
+                  Belum ada data pengeluaran
+                </p>
+              </div>
+            ) : (
+              <>
+                <div className="border-2 border-brutal-black shadow-brutal-md p-2 bg-brutal-white mb-4">
+                  <SvgPieChart
+                    slices={slices}
+                    activeIndex={activeIndex}
+                    onSliceClick={handleSliceClick}
+                    size={220}
+                  />
+                </div>
 
-                {/* Amount */}
-                <span
-                  className={cn(
-                    "text-sm font-black",
-                    activeIndex === i ? "text-white" : "text-brutal-black"
-                  )}
-                >
-                  {formatIDR(s.value)}
-                </span>
-
-                {/* Percentage */}
-                <span
-                  className={cn(
-                    "text-xs font-bold w-10 text-right",
-                    activeIndex === i ? "text-brutal-lime/70" : "text-brutal-black/40"
-                  )}
-                >
-                  {s.percentage.toFixed(0)}%
-                </span>
-              </button>
-            ))}
+                <div className="border-2 border-brutal-black bg-brutal-yellow px-4 py-2 shadow-brutal-sm w-full text-center">
+                  <p className="text-xs font-black uppercase tracking-wider">
+                    {chartLabel}
+                  </p>
+                </div>
+              </>
+            )}
           </div>
+
+          {/* ── Category Legend List ─────────────────────────────────────────────── */}
+          {slices.length > 0 && (
+            <div className="px-4 pt-4">
+              <p className="text-xs font-black uppercase tracking-wider mb-3 opacity-60">
+                Rincian Kategori
+              </p>
+              <div className="flex flex-col border-2 border-brutal-black divide-y-2 divide-brutal-black bg-brutal-white shadow-brutal-md">
+                {slices.map((s, i) => (
+                  <button
+                    key={s.label}
+                    onClick={() => handleSliceClick(i)}
+                    className={cn(
+                      "flex items-center gap-3 px-4 py-3 text-left brutal-press",
+                      activeIndex === i ? "bg-brutal-black" : "bg-transparent"
+                    )}
+                  >
+                    <div
+                      className="h-4 w-4 shrink-0 border-2 border-brutal-black"
+                      style={{ backgroundColor: s.color }}
+                    />
+                    <span
+                      className={cn(
+                        "flex-1 text-sm font-bold",
+                        activeIndex === i ? "text-brutal-lime" : "text-brutal-black"
+                      )}
+                    >
+                      {s.label}
+                    </span>
+                    <span
+                      className={cn(
+                        "text-sm font-black",
+                        activeIndex === i ? "text-white" : "text-brutal-black"
+                      )}
+                    >
+                      {formatIDR(s.value)}
+                    </span>
+                    <span
+                      className={cn(
+                        "text-xs font-bold w-10 text-right",
+                        activeIndex === i ? "text-brutal-lime/70" : "text-brutal-black/40"
+                      )}
+                    >
+                      {s.percentage.toFixed(0)}%
+                    </span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+        </>
+      ) : (
+        <div className="px-4 pt-6">
+          <p className="text-xs font-black uppercase tracking-wider mb-4 opacity-60">
+            Status Anggaran
+          </p>
+          {progresses.length === 0 ? (
+            <div className="flex flex-col items-center gap-2 py-8">
+              <Target size={48} strokeWidth={2.5} className="text-brutal-black/40 mb-2" />
+              <p className="text-xs font-bold uppercase text-brutal-black/40 text-center">
+                Belum ada anggaran
+              </p>
+            </div>
+          ) : (
+            <div className="flex flex-col gap-4">
+              {progresses.map((p) => {
+                const firstCat = p.categories[0];
+                const IconComp = firstCat?.icon ? (LucideIcons as any)[firstCat.icon] : LucideIcons.Target;
+                return (
+                  <button
+                    key={p.budget.id}
+                    onClick={() => navigate(`/budgets/${p.budget.id}`)}
+                    className="flex flex-col gap-2 p-3 border-2 border-brutal-black bg-brutal-white shadow-brutal-sm brutal-press text-left"
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <div className={cn("h-8 w-8 flex items-center justify-center border-2 border-brutal-black", firstCat?.colorClass ? `bg-${firstCat.colorClass}` : "bg-brutal-yellow")}>
+                          {IconComp && <IconComp size={14} strokeWidth={2.5} className="text-white" />}
+                        </div>
+                        <div className="flex flex-col">
+                           <span className="text-sm font-bold truncate">{p.budget.name || firstCat?.name || "Anggaran"}</span>
+                           {p.categories.length > 1 && (
+                             <span className="text-[9px] uppercase tracking-wider font-bold opacity-60">
+                               {p.categories.length} Kategori
+                             </span>
+                           )}
+                        </div>
+                      </div>
+                      <span className="text-xs font-black">
+                        {p.percentage.toFixed(0)}%
+                      </span>
+                    </div>
+                    
+                    <BrutalProgressBar percentage={p.percentage} status={p.status} />
+                    
+                    <div className="flex items-center justify-between text-[10px] font-bold uppercase tracking-wider opacity-70">
+                      <span>{formatIDR(p.spent)}</span>
+                      <span>Target: {formatIDR(p.budget.amount)}</span>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          )}
         </div>
       )}
     </div>

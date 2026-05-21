@@ -5,7 +5,8 @@ import { useTransactions, type FilterType, type FilterPeriod } from "@/hooks/use
 import { TransactionGroup } from "@/components/molecules/TransactionItem";
 import { WalletCard } from "@/components/molecules/WalletCard";
 import { BrutalButton } from "@/components/atoms/BrutalButton";
-import { SlidersHorizontal, TrendingUp, TrendingDown, Wallet, Sparkles, Inbox } from "lucide-react";
+import { SlidersHorizontal, TrendingUp, TrendingDown, Wallet, Sparkles, Inbox, AlertTriangle } from "lucide-react";
+import { useBudgetProgress } from "@/hooks/useBudgetProgress";
 import { cn } from "@/lib/utils";
 import { useNavigate } from "react-router-dom";
 import { type Transaction } from "@/db/db";
@@ -190,6 +191,8 @@ export function HomeScreen() {
   const [drawerOpen, setDrawerOpen] = useState(false);
 
   const { grouped } = useTransactions(filterType, filterPeriod);
+  const { progresses } = useBudgetProgress();
+  const alertProgresses = progresses.filter((p) => p.status === "warning" || p.status === "critical");
 
   const firstName = user?.name?.split(" ")[0] ?? "Kamu";
 
@@ -274,6 +277,34 @@ export function HomeScreen() {
           bgColor="bg-brutal-rose"
         />
       </div>
+
+      {/* ── Budget Alerts ────────────────────────────────────────────────────── */}
+      {alertProgresses.length > 0 && (
+        <div className="border-b-2 border-brutal-black divide-y-2 divide-brutal-black">
+          {alertProgresses.map((p) => (
+            <button
+              key={p.budget.id}
+              onClick={() => {
+                navigate("/statistics");
+              }}
+              className={cn(
+                "w-full px-4 py-3 flex items-center justify-between brutal-press text-left",
+                p.status === "critical" ? "bg-brutal-rose" : "bg-brutal-yellow"
+              )}
+            >
+              <div className="flex items-center gap-2 text-brutal-black">
+                <AlertTriangle size={18} strokeWidth={3} />
+                <span className="text-xs font-bold uppercase tracking-wider">
+                  Anggaran {p.budget.name || p.categories[0]?.name || "Kustom"} {p.status === "critical" ? "Kritis" : "Hampir Habis"}
+                </span>
+              </div>
+              <span className="text-sm font-black text-brutal-black">
+                {p.percentage.toFixed(0)}%
+              </span>
+            </button>
+          ))}
+        </div>
+      )}
 
       {/* ── Wallet Horizontal Scroll ─────────────────────────────────────────── */}
       {wallets.length > 0 && (
