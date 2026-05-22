@@ -113,6 +113,7 @@ export function AddTransactionScreen() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [showSuccess, setShowSuccess] = useState(false);
   const [activePicker, setActivePicker] = useState<"category" | "wallet" | "fromWallet" | "toWallet" | null>(null);
+  const [transferFee, setTransferFee] = useState("");
 
   // ── Form State ───────────────────────────────────────────────────────────
   const [amount, setAmount] = useState("");
@@ -132,11 +133,27 @@ export function AddTransactionScreen() {
   const [toWalletId, setToWalletId] = useState("");
   const [toWalletLabel, setToWalletLabel] = useState("");
   const [toWalletColor, setToWalletColor] = useState("");
-  const [transferFee, setTransferFee] = useState("");
   const [notes, setNotes] = useState("");
   const [date, setDate] = useState(format(new Date(), "yyyy-MM-dd"));
+
+  // Items
+  const [useItemDetails, setUseItemDetails] = useState(false);
+  const [items, setItems] = useState<{ name: string, price: string }[]>([]);
+
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isLoading, setIsLoading] = useState(false);
+
+  // ── Auto Calculate Amount ────────────────────────────────────────────────
+  useEffect(() => {
+    if (useItemDetails && activeType === "expense") {
+      const total = items.reduce((sum, item) => sum + parseRupiah(item.price), 0);
+      if (total > 0) {
+        setAmount(new Intl.NumberFormat("id-ID").format(total));
+      } else {
+        setAmount("");
+      }
+    }
+  }, [items, useItemDetails, activeType]);
 
   // ── Load categories live ─────────────────────────────────────────────────
   useEffect(() => {
@@ -175,6 +192,8 @@ export function AddTransactionScreen() {
     setToWalletColor("");
     setTransferFee("");
     setNotes("");
+    setUseItemDetails(false);
+    setItems([]);
     setErrors({});
   }
 
@@ -257,6 +276,9 @@ export function AddTransactionScreen() {
           category: categoryValue,
           walletId: parseInt(walletId),
           notes: notes.trim() || undefined,
+          items: useItemDetails && items.length > 0
+            ? items.map(i => ({ name: i.name.trim() || "Item", price: parseRupiah(i.price) }))
+            : undefined,
         });
       }
 
@@ -277,6 +299,8 @@ export function AddTransactionScreen() {
       setToWalletColor("");
       setTransferFee("");
       setNotes("");
+      setUseItemDetails(false);
+      setItems([]);
       setDate(format(new Date(), "yyyy-MM-dd"));
 
       setShowSuccess(true);
@@ -364,11 +388,13 @@ export function AddTransactionScreen() {
                 setAmount(formatRupiah(e.target.value));
                 if (errors.amount) setErrors((p) => ({ ...p, amount: "" }));
               }}
+              disabled={useItemDetails && activeType === "expense"}
               className={cn(
                 "w-full border-2 border-brutal-black bg-brutal-white pl-10 pr-4 py-3",
                 "text-sm font-medium shadow-brutal-md outline-none",
                 "focus:shadow-brutal-sm focus:translate-x-[2px] focus:translate-y-[2px] transition-all duration-75",
-                errors.amount && "border-brutal-rose"
+                errors.amount && "border-brutal-rose",
+                useItemDetails && activeType === "expense" && "bg-brutal-black/5 opacity-80 cursor-not-allowed"
               )}
             />
           </div>
@@ -376,6 +402,94 @@ export function AddTransactionScreen() {
             <p className="text-xs font-bold text-brutal-rose">{errors.amount}</p>
           )}
         </div>
+
+        {/* ── Transaction Items Switch ── */}
+        {activeType === "expense" && (
+          <div className="flex flex-col gap-3">
+            <button
+              onClick={() => {
+                setUseItemDetails(!useItemDetails);
+                if (!useItemDetails && items.length === 0) {
+                  setItems([{ name: "", price: "" }]);
+                }
+              }}
+              className="flex items-center gap-3 self-start brutal-press"
+            >
+              <div
+                className={cn(
+                  "w-10 h-6 border-2 border-brutal-black relative transition-colors duration-200",
+                  useItemDetails ? "bg-brutal-lime" : "bg-brutal-white"
+                )}
+              >
+                <div
+                  className={cn(
+                    "absolute top-0.5 bottom-0.5 w-4 border-2 border-brutal-black bg-brutal-white transition-all duration-200",
+                    useItemDetails ? "left-4" : "left-0.5"
+                  )}
+                />
+              </div>
+              <span className="text-xs font-bold uppercase tracking-wider">
+                Gunakan Detail Barang
+              </span>
+            </button>
+
+            {useItemDetails && (
+              <div className="flex flex-col gap-3 pl-4 border-l-4 border-brutal-black mt-2">
+                {items.map((item, idx) => (
+                  <div key={idx} className="flex gap-2 items-start">
+                    <div className="flex-1 flex flex-col gap-2">
+                      <input
+                        type="text"
+                        placeholder="Nama barang..."
+                        value={item.name}
+                        onChange={(e) => {
+                          const newItems = [...items];
+                          newItems[idx].name = e.target.value;
+                          setItems(newItems);
+                        }}
+                        className="w-full border-2 border-brutal-black bg-brutal-white px-3 py-2 text-xs font-bold shadow-[2px_2px_0px_rgba(0,0,0,1)] outline-none focus:shadow-none focus:translate-x-[2px] focus:translate-y-[2px]"
+                      />
+                      <div className="relative">
+                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs font-black text-brutal-black/50">
+                          Rp
+                        </span>
+                        <input
+                          type="text"
+                          inputMode="numeric"
+                          placeholder="0"
+                          value={item.price}
+                          onChange={(e) => {
+                            const newItems = [...items];
+                            newItems[idx].price = formatRupiah(e.target.value);
+                            setItems(newItems);
+                          }}
+                          className="w-full border-2 border-brutal-black bg-brutal-white pl-8 pr-3 py-2 text-xs font-bold shadow-[2px_2px_0px_rgba(0,0,0,1)] outline-none focus:shadow-none focus:translate-x-[2px] focus:translate-y-[2px]"
+                        />
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => {
+                        const newItems = items.filter((_, i) => i !== idx);
+                        setItems(newItems);
+                      }}
+                      className="p-2 border-2 border-brutal-black bg-brutal-rose text-white shadow-[2px_2px_0px_rgba(0,0,0,1)] brutal-press mt-1 shrink-0"
+                    >
+                      <LucideIcons.Trash2 size={16} strokeWidth={2.5} />
+                    </button>
+                  </div>
+                ))}
+
+                <button
+                  onClick={() => setItems([...items, { name: "", price: "" }])}
+                  className="self-start flex items-center gap-2 mt-1 px-3 py-2 border-2 border-brutal-black bg-brutal-cyan shadow-[2px_2px_0px_rgba(0,0,0,1)] brutal-press text-xs font-bold uppercase tracking-wider"
+                >
+                  <LucideIcons.Plus size={14} strokeWidth={3} />
+                  Tambah Item
+                </button>
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Deskripsi */}
         <BrutalInput
