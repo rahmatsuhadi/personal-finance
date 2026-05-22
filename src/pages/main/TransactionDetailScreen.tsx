@@ -172,6 +172,25 @@ export function TransactionDetailScreen() {
           {transaction.notes && <DetailRow label="Catatan" value={transaction.notes} />}
         </div>
 
+        {/* Transaction Items */}
+        {transaction.items && transaction.items.length > 0 && (
+          <div className="mb-4">
+            <h3 className="text-xs font-black uppercase tracking-wider mb-2 opacity-60">
+              Rincian Barang
+            </h3>
+            <div className="border-2 border-brutal-black bg-brutal-white shadow-brutal-md divide-y-2 divide-brutal-black">
+              {transaction.items.map((item, idx) => (
+                <div key={idx} className="flex justify-between items-center p-3">
+                  <span className="text-sm font-bold">{item.name}</span>
+                  <span className="text-sm font-black">
+                    {formatIDR(item.price)}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* Action Buttons */}
         <div className="flex gap-3">
           <BrutalButton
