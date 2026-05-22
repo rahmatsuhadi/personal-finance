@@ -15,6 +15,11 @@ export interface Wallet {
   balance: number;
 }
 
+export interface TransactionItem {
+  name: string;
+  price: number;
+}
+
 export interface Transaction {
   id?: number;
   type: "income" | "expense" | "transfer";
@@ -27,6 +32,7 @@ export interface Transaction {
   toWalletId?: number;
   transferFee?: number;
   notes?: string;
+  items?: TransactionItem[];
 }
 
 export interface Category {
@@ -89,6 +95,10 @@ class BrutalistFinanceDB extends Dexie {
           delete budget.categoryId;
         }
       });
+    });
+
+    this.version(5).stores({
+      transactions: "++id, type, date, amount, category, walletId",
     });
   }
 }
