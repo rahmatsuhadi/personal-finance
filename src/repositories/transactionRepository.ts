@@ -5,44 +5,96 @@ import { db, type Transaction } from "@/db/db";
 
 export const transactionRepository = {
   /**
-   * Get all transactions, sorted newest first
+   * Get all active transactions, sorted newest first
    */
   async getAll(): Promise<Transaction[]> {
-    return db.transactions.orderBy("date").reverse().toArray();
+    return db.transactions
+      .filter(t => !t.isDeleted)
+      .toArray()
+      .then(txs => txs.sort((a, b) => b.date.localeCompare(a.date)));
   },
 
   /**
-   * Get transactions filtered by date range
+   * Get transactions filtered by date range (excludes soft-deleted)
    */
   async getByDateRange(from: string, to: string): Promise<Transaction[]> {
     return db.transactions
       .where("date")
       .between(from, to, true, true)
+      .filter(t => !t.isDeleted)
       .reverse()
       .toArray();
   },
 
   /**
-   * Add a new transaction
+   * Get transaction by ID
    */
-  async add(transaction: Omit<Transaction, "id">) {
-    return db.transactions.add(transaction);
+  async getById(id: string): Promise<Transaction | undefined> {
+    return db.transactions.get(id);
   },
 
   /**
-   * Update a transaction by id
+   * Add a new transaction with UUID and dirty flag
    */
-  async update(
-    id: number,
-    changes: Partial<Transaction>
-  ): Promise<number> {
-    return db.transactions.update(id, changes);
+  async add(transaction: Omit<Transaction, "id" | "serverId" | "updatedAt" | "isDirty" | "isDeleted">) {
+    const newTx: Transaction = {
+      ...transaction,
+      id: crypto.randomUUID(),
+      updatedAt: Date.now(),
+      isDirty: true,
+      isDeleted: false,
+    };
+    await db.transactions.add(newTx);
+    return newTx.id;
   },
 
   /**
-   * Delete a transaction by id
+   * Update a transaction — marks as dirty
    */
-  async remove(id: number): Promise<void> {
+  async update(id: string, changes: Partial<Omit<Transaction, "id">>): Promise<number> {
+    return db.transactions.update(id, {
+      ...changes,
+      updatedAt: Date.now(),
+      isDirty: true,
+    });
+  },
+
+  /**
+   * Soft-delete a transaction
+   */
+  async remove(id: string): Promise<void> {
+    await db.transactions.update(id, {
+      isDeleted: true,
+      isDirty: true,
+      updatedAt: Date.now(),
+    });
+  },
+
+  /**
+   * Hard delete (used internally after successful server sync)
+   */
+  async hardDelete(id: string): Promise<void> {
     await db.transactions.delete(id);
+  },
+
+  /**
+   * Mark transaction as synced
+   */
+  async markSynced(id: string, serverId: string): Promise<void> {
+    await db.transactions.update(id, { isDirty: false, serverId });
+  },
+
+  /**
+   * Get all dirty (unsynced) transactions
+   */
+  async getDirty(): Promise<Transaction[]> {
+    return db.transactions.filter(t => t.isDirty).toArray();
+  },
+
+  /**
+   * Bulk upsert transactions from server (initial/delta sync)
+   */
+  async bulkUpsertFromServer(transactions: Transaction[]): Promise<void> {
+    await db.transactions.bulkPut(transactions);
   },
 };

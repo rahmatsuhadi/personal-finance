@@ -35,7 +35,7 @@ export function groupTransactionsByDate(
 // ─── Balance helpers ──────────────────────────────────────────────────────────
 
 /** Apply balance changes for a transaction being ADDED */
-async function applyBalanceAdd(tx: Omit<Transaction, "id">) {
+async function applyBalanceAdd(tx: Omit<Transaction, "id" | "serverId" | "updatedAt" | "isDirty" | "isDeleted">) {
   if (tx.type === "income" && tx.walletId) {
     const w = await db.wallets.get(tx.walletId);
     if (w) await db.wallets.update(tx.walletId, { balance: (w.balance ?? 0) + tx.amount });
@@ -100,6 +100,7 @@ export function useTransactions(
       const results = await db.transactions
         .where("date")
         .between(fromDate, toDate, true, true)
+        .filter(t => !t.isDeleted)
         .reverse()
         .toArray();
 
@@ -117,7 +118,7 @@ export function useTransactions(
   const grouped = groupTransactionsByDate(transactions);
 
   // ── Add ────────────────────────────────────────────────────────────────────
-  const addTransaction = useCallback(async (tx: Omit<Transaction, "id">) => {
+  const addTransaction = useCallback(async (tx: Omit<Transaction, "id" | "serverId" | "updatedAt" | "isDirty" | "isDeleted">) => {
     const id = await transactionRepository.add(tx);
     await applyBalanceAdd(tx);
     return id;
@@ -126,7 +127,7 @@ export function useTransactions(
   // ── Update ─────────────────────────────────────────────────────────────────
   // Strategy: reverse old balance, apply new balance, then update record
   const updateTransaction = useCallback(
-    async (id: number, newData: Omit<Transaction, "id">) => {
+    async (id: string, newData: Omit<Transaction, "id" | "serverId" | "updatedAt" | "isDirty" | "isDeleted">) => {
       const old = await db.transactions.get(id);
       if (old) {
         // 1. Reverse old balance effect
@@ -141,8 +142,8 @@ export function useTransactions(
   );
 
   // ── Remove ─────────────────────────────────────────────────────────────────
-  // Reverse balance before deleting
-  const removeTransaction = useCallback(async (id: number) => {
+  // Reverse balance before soft-deleting
+  const removeTransaction = useCallback(async (id: string) => {
     const tx = await db.transactions.get(id);
     if (tx) {
       await reverseBalance(tx);
@@ -166,7 +167,8 @@ export function useAllTransactions() {
 
   useEffect(() => {
     const sub = liveQuery(() =>
-      db.transactions.orderBy("date").reverse().toArray()
+      db.transactions.filter(t => !t.isDeleted).toArray()
+        .then(txs => txs.sort((a, b) => b.date.localeCompare(a.date)))
     ).subscribe({
       next: (data) => setTransactions(data),
       error: (e) => console.error("[useAllTransactions]", e),

@@ -9,20 +9,11 @@ import {
 } from "@/components/molecules/SelectPickerScreen";
 import { Check } from "lucide-react";
 import * as LucideIcons from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn, formatRupiah, parseCurrency } from "@/lib/utils";
 import { useNavigate, useParams } from "react-router-dom";
 import { useBudgets } from "@/hooks/useBudgets";
 import { useCategories } from "@/hooks/useCategories";
 
-// Helpers
-function formatRupiah(raw: string): string {
-  const digits = raw.replace(/\D/g, "");
-  if (!digits) return "";
-  return new Intl.NumberFormat("id-ID").format(parseInt(digits));
-}
-function parseRupiah(formatted: string): number {
-  return parseInt(formatted.replace(/\D/g, "") || "0");
-}
 
 export function BudgetFormScreen() {
   const navigate = useNavigate();
@@ -44,10 +35,10 @@ export function BudgetFormScreen() {
   // Load initial data if editing
   useEffect(() => {
     if (isEditMode && budgets.length > 0) {
-      const budget = budgets.find(b => b.id === Number(id));
+      const budget = budgets.find(b => b.id === id);
       if (budget) {
         setName(budget.name);
-        setCategoryIds(budget.categoryIds.map(String));
+        setCategoryIds(budget.categoryIds);
         setAmount(formatRupiah(budget.amount.toString()));
         setCycle(budget.cycle);
       }
@@ -58,7 +49,7 @@ export function BudgetFormScreen() {
     const errs: Record<string, string> = {};
     if (!name.trim()) errs.name = "Nama anggaran wajib diisi.";
     if (categoryIds.length === 0) errs.categoryIds = "Minimal pilih 1 kategori.";
-    const parsedAmount = parseRupiah(amount);
+    const parsedAmount = parseCurrency(amount);
     if (!amount || parsedAmount <= 0) errs.amount = "Nominal harus diisi dengan benar.";
 
     if (Object.keys(errs).length > 0) {
@@ -70,13 +61,13 @@ export function BudgetFormScreen() {
     try {
       const data = {
         name: name.trim(),
-        categoryIds: categoryIds.map(Number),
+        categoryIds,
         amount: parsedAmount,
         cycle,
       };
 
-      if (isEditMode) {
-        await updateBudget(Number(id), data);
+      if (isEditMode && id) {
+        await updateBudget(id, data);
       } else {
         await addBudget(data);
       }
@@ -92,7 +83,7 @@ export function BudgetFormScreen() {
   const categoryOptions: SelectOption[] = expenseCategories.map(c => {
     const IconComp = c.icon ? (LucideIcons as any)[c.icon] : LucideIcons.Tag;
     return {
-      value: c.id!.toString(),
+      value: c.id,
       label: c.name,
       prefix: (
         <div className={cn("h-7 w-7 flex items-center justify-center border-2 border-brutal-black", c.colorClass ? `bg-${c.colorClass}` : "bg-brutal-yellow")}>

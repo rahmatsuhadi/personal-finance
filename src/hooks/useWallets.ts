@@ -22,8 +22,7 @@ export function useWallets() {
   useEffect(() => {
     const sub = liveQuery(() =>
       db.transactions
-        .where("type")
-        .equals("income")
+        .filter(t => t.type === "income" && !t.isDeleted)
         .toArray()
         .then((txs) => txs.reduce((sum, t) => sum + t.amount, 0))
     ).subscribe({
@@ -36,8 +35,7 @@ export function useWallets() {
   useEffect(() => {
     const sub = liveQuery(() =>
       db.transactions
-        .where("type")
-        .equals("expense")
+        .filter(t => t.type === "expense" && !t.isDeleted)
         .toArray()
         .then((txs) => txs.reduce((sum, t) => sum + t.amount, 0))
     ).subscribe({
@@ -49,18 +47,18 @@ export function useWallets() {
 
   const totalBalance = wallets.reduce((sum, w) => sum + (w.balance ?? 0), 0);
 
-  const addWallet = useCallback(async (wallet: Omit<Wallet, "id">) => {
+  const addWallet = useCallback(async (wallet: Omit<Wallet, "id" | "serverId" | "updatedAt" | "isDirty" | "isDeleted">) => {
     await walletRepository.add(wallet);
   }, []);
 
   const updateWallet = useCallback(
-    async (id: number, changes: Partial<Wallet>) => {
+    async (id: string, changes: Partial<Omit<Wallet, "id">>) => {
       await walletRepository.update(id, changes);
     },
     []
   );
 
-  const removeWallet = useCallback(async (id: number) => {
+  const removeWallet = useCallback(async (id: string) => {
     await walletRepository.remove(id);
   }, []);
 

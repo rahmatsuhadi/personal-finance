@@ -1,7 +1,7 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { BrutalButton } from "@/components/atoms/BrutalButton";
 import { BrutalInput } from "@/components/atoms/BrutalInput";
-import { cn } from "@/lib/utils";
+import { cn, formatRupiah, parseCurrency } from "@/lib/utils";
 import { X } from "lucide-react";
 import type { Wallet } from "@/db/db";
 
@@ -24,7 +24,7 @@ const COLOR_OPTIONS: { label: string; value: string; bg: string }[] = [
 interface WalletFormModalProps {
   open: boolean;
   onClose: () => void;
-  onSave: (wallet: Omit<Wallet, "id">) => Promise<void>;
+  onSave: (wallet: Omit<Wallet, "id" | "updatedAt" | "isDirty" | "isDeleted">) => Promise<void>;
   /** Pre-fill for edit mode */
   initialData?: Wallet;
   mode?: "add" | "edit";
@@ -45,7 +45,7 @@ export function WalletFormModal({
     initialData?.colorClass ?? "brutal-lime"
   );
   const [balance, setBalance] = useState(
-    initialData?.balance != null ? String(initialData.balance) : ""
+    initialData?.balance != null ? formatRupiah(Number(initialData.balance)) : ""
   );
   const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -54,9 +54,16 @@ export function WalletFormModal({
     setName(initialData?.name ?? "");
     setCurrency(initialData?.currency ?? "IDR");
     setColorClass(initialData?.colorClass ?? "brutal-lime");
-    setBalance(initialData?.balance != null ? String(initialData.balance) : "");
+    setBalance(initialData?.balance != null ? formatRupiah(Number(initialData.balance)) : "");
     setErrors({});
   }
+
+  // Sync state when modal opens
+  useEffect(() => {
+    if (open) {
+      reset();
+    }
+  }, [open, initialData]);
 
   function handleClose() {
     reset();
@@ -66,7 +73,7 @@ export function WalletFormModal({
   async function handleSave() {
     const errs: Record<string, string> = {};
     if (!name.trim()) errs.name = "Nama dompet wajib diisi.";
-    const balanceNum = parseFloat(balance.replace(/[,.]/g, "")) || 0;
+    const balanceNum = parseCurrency(balance);
     if (Object.keys(errs).length > 0) {
       setErrors(errs);
       return;
@@ -125,10 +132,10 @@ export function WalletFormModal({
             id="wallet-balance"
             label={mode === "edit" ? "Saldo Saat Ini" : "Saldo Awal"}
             placeholder="0"
-            type="number"
+            type="text"
             inputMode="numeric"
             value={balance}
-            onChange={(e) => setBalance(e.target.value)}
+            onChange={(e) => setBalance(formatRupiah(e.target.value))}
           />
 
           {/* Currency */}

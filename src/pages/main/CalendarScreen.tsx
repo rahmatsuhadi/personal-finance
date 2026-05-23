@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { liveQuery } from "dexie";
 import { db, type Transaction } from "@/db/db";
 import { useNavigate } from "react-router-dom";
-import { cn } from "@/lib/utils";
+import { cn, formatIDR } from "@/lib/utils";
 import {
   format,
   startOfMonth,
@@ -22,13 +22,7 @@ import { ChevronLeft, ChevronRight, X, ArrowDown, ArrowUp, ArrowLeftRight, Inbox
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
-function formatIDR(n: number): string {
-  return new Intl.NumberFormat("id-ID", {
-    style: "currency",
-    currency: "IDR",
-    minimumFractionDigits: 0,
-  }).format(n);
-}
+
 
 /** Abbreviated amount: 1.5Jt, 500K, 50K */
 function shortAmount(n: number): string {

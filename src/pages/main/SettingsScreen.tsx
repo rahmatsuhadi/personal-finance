@@ -6,15 +6,17 @@ import { WalletFormModal } from "@/components/molecules/WalletFormModal";
 import { ConfirmModal } from "@/components/atoms/ConfirmModal";
 import { BrutalButton } from "@/components/atoms/BrutalButton";
 import { BrutalBadge } from "@/components/atoms/BrutalBadge";
-import { User, LogOut, Wallet, Plus, Trash2, Pencil, Tags, Target } from "lucide-react";
+import { User, LogOut, Wallet, Plus, Trash2, Pencil, Tags, Target, Cloud, CloudOff, RefreshCw } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import type { Wallet as WalletType } from "@/db/db";
+import { useSyncContext } from "@/contexts/SyncContext";
 
 // ─── SettingsScreen ───────────────────────────────────────────────────────────
 
 export function SettingsScreen() {
-  const { user, logout } = useAuth();
+  const { user, isCloudConnected, cloudUser, loginWithGoogle, logoutCloud, logout } = useAuth();
   const { wallets, addWallet, updateWallet, removeWallet } = useWallets();
+  const { status: syncStatus, lastSyncAt, syncNow } = useSyncContext();
   const navigate = useNavigate();
 
   const [addModalOpen, setAddModalOpen] = useState(false);
@@ -34,7 +36,7 @@ export function SettingsScreen() {
     setDeletingWallet(null);
   }
 
-  async function handleUpdateWallet(data: Omit<WalletType, "id">) {
+  async function handleUpdateWallet(data: Omit<WalletType, "id" | "updatedAt" | "isDirty" | "isDeleted">) {
     if (!editingWallet?.id) return;
     await updateWallet(editingWallet.id, data);
     setEditingWallet(null);
@@ -142,6 +144,76 @@ export function SettingsScreen() {
               ))}
             </div>
           )}
+        </div>
+
+        {/* ── Cloud Sync Section ─────────────────────────────────────────────── */}
+        <div className="p-4 border-t-2 border-brutal-black">
+          <p className="text-xs font-bold uppercase tracking-wider opacity-60 mb-3">
+            Sinkronisasi Cloud
+          </p>
+          <div className="border-2 border-brutal-black bg-brutal-white p-4 shadow-brutal-sm">
+            <div className="flex items-center gap-3 mb-4">
+              <div className={`flex h-10 w-10 items-center justify-center border-2 border-brutal-black ${isCloudConnected ? "bg-brutal-lime" : "bg-brutal-black/10"}`}>
+                {isCloudConnected ? (
+                  <Cloud size={18} strokeWidth={2.5} />
+                ) : (
+                  <CloudOff size={18} strokeWidth={2.5} className="opacity-50" />
+                )}
+              </div>
+              <div className="flex-1">
+                <p className="text-sm font-bold uppercase">
+                  {isCloudConnected ? "Terhubung" : "Tidak Terhubung"}
+                </p>
+                <p className="text-xs text-brutal-black/60">
+                  {isCloudConnected && cloudUser ? cloudUser.email : "Login Google untuk sinkronisasi"}
+                </p>
+              </div>
+            </div>
+
+            {isCloudConnected ? (
+              <div className="flex flex-col gap-2">
+                {lastSyncAt && (
+                  <p className="text-[10px] font-bold uppercase tracking-wider text-brutal-black/50">
+                    Terakhir sync: {new Date(lastSyncAt).toLocaleString("id-ID")}
+                  </p>
+                )}
+                <div className="flex gap-2">
+                  <BrutalButton
+                    id="sync-now-btn"
+                    variant="primary"
+                    size="sm"
+                    onClick={syncNow}
+                    disabled={syncStatus === "syncing"}
+                    className="flex items-center gap-2 flex-1"
+                  >
+                    <RefreshCw size={13} strokeWidth={2.5} className={syncStatus === "syncing" ? "animate-spin" : ""} />
+                    {syncStatus === "syncing" ? "Menyinkronkan..." : "Sync Sekarang"}
+                  </BrutalButton>
+                  <BrutalButton
+                    variant="ghost"
+                    size="sm"
+                    onClick={logoutCloud}
+                    className="flex items-center gap-1.5 flex-1"
+                  >
+                    <LogOut size={13} strokeWidth={2.5} />
+                    Cabut Akun
+                  </BrutalButton>
+                </div>
+              </div>
+            ) : (
+              <BrutalButton
+                id="settings-google-login-btn"
+                variant="accent"
+                size="sm"
+                fullWidth
+                onClick={loginWithGoogle}
+                className="flex items-center justify-center gap-2"
+              >
+                <Cloud size={13} strokeWidth={2.5} />
+                Login dengan Google
+              </BrutalButton>
+            )}
+          </div>
         </div>
 
         {/* ── Categories Management ─────────────────────────────────────────── */}

@@ -27,7 +27,7 @@ export function useBudgetProgress() {
 
   useEffect(() => {
     const sub = liveQuery(async () => {
-      const budgets = await db.budgets.toArray();
+      const budgets = await db.budgets.filter(b => !b.isDeleted).toArray();
       const results: BudgetProgress[] = [];
 
       for (const budget of budgets) {
@@ -73,7 +73,7 @@ export function useBudgetProgress() {
 
         // Filter by date range and expense type
         const cycleTxs = txs.filter(
-          (tx) => tx.date >= startStr && tx.date <= endStr && tx.type === "expense"
+          (tx) => tx.date >= startStr && tx.date <= endStr && tx.type === "expense" && !tx.isDeleted
         );
 
         const spent = cycleTxs.reduce((sum, tx) => sum + tx.amount, 0);

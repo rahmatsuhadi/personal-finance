@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { liveQuery } from "dexie";
 import { db, type Transaction } from "@/db/db";
-import { cn } from "@/lib/utils";
+import { cn, formatIDR } from "@/lib/utils";
 import { format, startOfMonth, endOfMonth, startOfYear, endOfYear } from "date-fns";
 import { id as idLocale } from "date-fns/locale";
 import { BarChart3, Target } from "lucide-react";
@@ -12,13 +12,7 @@ import { useNavigate } from "react-router-dom";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
-function formatIDR(n: number): string {
-  return new Intl.NumberFormat("id-ID", {
-    style: "currency",
-    currency: "IDR",
-    minimumFractionDigits: 0,
-  }).format(n);
-}
+
 
 // ─── SVG Pie Chart ────────────────────────────────────────────────────────────
 // Custom pure-SVG donut/pie chart — Neo-Brutalism style with black stroke

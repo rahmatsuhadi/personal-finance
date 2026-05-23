@@ -1,15 +1,11 @@
 import { type Transaction } from "@/db/db";
-import { cn } from "@/lib/utils";
+import { cn, formatIDR } from "@/lib/utils";
 import { ArrowDownLeft, ArrowUpRight, ArrowLeftRight } from "lucide-react";
 
 // ─── Format currency helper ───────────────────────────────────────────────────
 
 function formatAmount(amount: number, type: Transaction["type"]): string {
-  const formatted = new Intl.NumberFormat("id-ID", {
-    style: "currency",
-    currency: "IDR",
-    minimumFractionDigits: 0,
-  }).format(amount);
+  const formatted = formatIDR(amount);
 
   if (type === "income") return `+${formatted}`;
   if (type === "expense") return `-${formatted}`;

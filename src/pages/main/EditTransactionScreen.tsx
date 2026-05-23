@@ -11,7 +11,7 @@ import {
   type SelectOption,
 } from "@/components/molecules/SelectPickerScreen";
 import { useTransactions } from "@/hooks/useTransactions";
-import { cn } from "@/lib/utils";
+import { cn, formatIDR, formatRupiah, parseCurrency } from "@/lib/utils";
 import {
   TrendingUp,
   TrendingDown,
@@ -56,25 +56,6 @@ const TAB_CONFIG: {
     },
   ];
 
-// ─── Helpers ──────────────────────────────────────────────────────────────────
-
-function formatRupiah(raw: string): string {
-  const digits = raw.replace(/\D/g, "");
-  if (!digits) return "";
-  return new Intl.NumberFormat("id-ID").format(parseInt(digits));
-}
-
-function parseRupiah(formatted: string): number {
-  return parseInt(formatted.replace(/\D/g, "") || "0");
-}
-
-function formatIDR(amount: number): string {
-  return new Intl.NumberFormat("id-ID", {
-    style: "currency",
-    currency: "IDR",
-    minimumFractionDigits: 0,
-  }).format(amount);
-}
 
 const COLOR_HEX: Record<string, string> = {
   "brutal-lime": "#c8f135",
@@ -130,7 +111,7 @@ export function EditTransactionScreen() {
   // Auto-Calculation
   useEffect(() => {
     if (useItemDetails && activeType === "expense") {
-      const total = items.reduce((sum, item) => sum + parseRupiah(item.price), 0);
+      const total = items.reduce((sum, item) => sum + parseCurrency(item.price), 0);
       if (total > 0) {
         setAmount(new Intl.NumberFormat("id-ID").format(total));
       } else {
@@ -142,7 +123,7 @@ export function EditTransactionScreen() {
   // Load transaction
   useEffect(() => {
     if (id) {
-      db.transactions.get(parseInt(id)).then((tx) => {
+      db.transactions.get(id).then((tx) => {
         if (tx) {
           setTransaction(tx);
           setActiveType(tx.type);
@@ -150,9 +131,9 @@ export function EditTransactionScreen() {
           setDescription(tx.description);
           setCategoryValue(tx.category);
           setCategoryLabel(tx.category);
-          setWalletId(String(tx.walletId ?? ""));
-          setFromWalletId(String(tx.fromWalletId ?? ""));
-          setToWalletId(String(tx.toWalletId ?? ""));
+          setWalletId(tx.walletId ?? "");
+          setFromWalletId(tx.fromWalletId ?? "");
+          setToWalletId(tx.toWalletId ?? "");
           setTransferFee(tx.transferFee ? formatRupiah(String(tx.transferFee)) : "");
           setNotes(tx.notes ?? "");
           setDate(tx.date);
@@ -194,6 +175,7 @@ export function EditTransactionScreen() {
       db.categories
         .where("type")
         .equals(activeType === "transfer" ? "expense" : activeType)
+        .filter(c => !c.isDeleted)
         .toArray()
     ).subscribe({
       next: (data) => setCategories(data),
@@ -231,7 +213,7 @@ export function EditTransactionScreen() {
 
   async function handleDeleteConfirm() {
     if (transaction) {
-      await removeTransaction(transaction.id!);
+      await removeTransaction(transaction.id);
       setDeleteOpen(false);
       navigate(-1);
     }
@@ -239,7 +221,7 @@ export function EditTransactionScreen() {
 
   async function handleSave() {
     const errs: Record<string, string> = {};
-    const amountNum = parseRupiah(amount);
+    const amountNum = parseCurrency(amount);
     if (amountNum <= 0) errs.amount = "Nominal wajib lebih dari 0.";
     if (!description.trim()) errs.description = "Deskripsi wajib diisi.";
     if (activeType !== "transfer") {
@@ -256,7 +238,7 @@ export function EditTransactionScreen() {
 
     setIsLoading(true);
     try {
-      const changes: Omit<Transaction, "id"> =
+      const changes: Omit<Transaction, "id" | "serverId" | "updatedAt" | "isDirty" | "isDeleted"> =
         activeType === "transfer"
           ? {
             type: "transfer",
@@ -264,9 +246,9 @@ export function EditTransactionScreen() {
             amount: amountNum,
             description: description.trim(),
             category: "Transfer",
-            fromWalletId: parseInt(fromWalletId),
-            toWalletId: parseInt(toWalletId),
-            transferFee: parseRupiah(transferFee),
+            fromWalletId: fromWalletId || undefined,
+            toWalletId: toWalletId || undefined,
+            transferFee: parseCurrency(transferFee),
             notes: notes.trim() || undefined,
           }
           : {
@@ -275,10 +257,10 @@ export function EditTransactionScreen() {
             amount: amountNum,
             description: description.trim(),
             category: categoryValue,
-            walletId: parseInt(walletId),
+            walletId: walletId || undefined,
             notes: notes.trim() || undefined,
             items: useItemDetails && items.length > 0 
-              ? items.map(i => ({ name: i.name.trim() || "Item", price: parseRupiah(i.price) }))
+              ? items.map(i => ({ name: i.name.trim() || "Item", price: parseCurrency(i.price) }))
               : undefined,
           };
 
