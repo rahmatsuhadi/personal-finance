@@ -34,7 +34,7 @@ const ICON_OPTIONS = [
 interface CategoryFormModalProps {
   open: boolean;
   onClose: () => void;
-  onSave: (category: Omit<Category, "id">) => Promise<void>;
+  onSave: (category: Omit<Category, "id" | "updatedAt" | "isDirty" | "isDeleted">) => Promise<void>;
   defaultType?: "income" | "expense";
   initialData?: Category;
   mode?: "add" | "edit";

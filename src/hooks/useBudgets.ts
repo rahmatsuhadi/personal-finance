@@ -7,7 +7,7 @@ export function useBudgets() {
   const [budgets, setBudgets] = useState<Budget[]>([]);
 
   useEffect(() => {
-    const sub = liveQuery(() => db.budgets.toArray()).subscribe({
+    const sub = liveQuery(() => db.budgets.filter(b => !b.isDeleted).toArray()).subscribe({
       next: (data) => setBudgets(data),
       error: () => { },
     });

@@ -17,18 +17,18 @@ export function useCategories() {
   const incomeCategories = categories.filter((c) => c.type === "income");
   const expenseCategories = categories.filter((c) => c.type === "expense");
 
-  const addCategory = useCallback(async (category: Omit<Category, "id">) => {
+  const addCategory = useCallback(async (category: Omit<Category, "id" | "serverId" | "updatedAt" | "isDirty" | "isDeleted">) => {
     await categoryRepository.add(category);
   }, []);
 
   const updateCategory = useCallback(
-    async (id: number, changes: Partial<Category>) => {
+    async (id: string, changes: Partial<Category>) => {
       await categoryRepository.update(id, changes);
     },
     []
   );
 
-  const removeCategory = useCallback(async (id: number) => {
+  const removeCategory = useCallback(async (id: string) => {
     await categoryRepository.remove(id);
   }, []);
 

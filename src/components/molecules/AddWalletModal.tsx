@@ -23,7 +23,7 @@ const COLOR_OPTIONS: { label: string; value: string; bg: string }[] = [
 interface AddWalletModalProps {
   open: boolean;
   onClose: () => void;
-  onSave: (wallet: Omit<Wallet, "id">) => Promise<void>;
+  onSave: (wallet: Omit<Wallet, "id" | "updatedAt" | "isDirty" | "isDeleted">) => Promise<void>;
 }
 
 export function AddWalletModal({ open, onClose, onSave }: AddWalletModalProps) {

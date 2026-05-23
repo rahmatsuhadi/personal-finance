@@ -8,7 +8,7 @@ import {
   SelectPickerScreen,
   type SelectOption,
 } from "@/components/molecules/SelectPickerScreen";
-import { cn } from "@/lib/utils";
+import { cn, formatIDR, formatRupiah, parseCurrency } from "@/lib/utils";
 import {
   TrendingUp,
   TrendingDown,
@@ -54,25 +54,6 @@ const TAB_CONFIG: {
     },
   ];
 
-// ─── Rupiah formatter ─────────────────────────────────────────────────────────
-
-function formatRupiah(raw: string): string {
-  const digits = raw.replace(/\D/g, "");
-  if (!digits) return "";
-  return new Intl.NumberFormat("id-ID").format(parseInt(digits));
-}
-
-function parseRupiah(formatted: string): number {
-  return parseInt(formatted.replace(/\D/g, "") || "0");
-}
-
-function formatIDR(amount: number): string {
-  return new Intl.NumberFormat("id-ID", {
-    style: "currency",
-    currency: "IDR",
-    minimumFractionDigits: 0,
-  }).format(amount);
-}
 
 // ─── Wallet color map ─────────────────────────────────────────────────────────
 
@@ -146,7 +127,7 @@ export function AddTransactionScreen() {
   // ── Auto Calculate Amount ────────────────────────────────────────────────
   useEffect(() => {
     if (useItemDetails && activeType === "expense") {
-      const total = items.reduce((sum, item) => sum + parseRupiah(item.price), 0);
+      const total = items.reduce((sum, item) => sum + parseCurrency(item.price), 0);
       if (total > 0) {
         setAmount(new Intl.NumberFormat("id-ID").format(total));
       } else {
@@ -161,6 +142,7 @@ export function AddTransactionScreen() {
       db.categories
         .where("type")
         .equals(activeType === "transfer" ? "expense" : activeType)
+        .filter(c => !c.isDeleted)
         .toArray()
     ).subscribe({
       next: (data) => {
@@ -230,7 +212,7 @@ export function AddTransactionScreen() {
 
   async function handleSubmit() {
     const errs: Record<string, string> = {};
-    const amountNum = parseRupiah(amount);
+    const amountNum = parseCurrency(amount);
 
     if (amountNum <= 0) errs.amount = "Nominal wajib lebih dari 0.";
     if (!description.trim()) errs.description = "Deskripsi wajib diisi.";
@@ -262,9 +244,9 @@ export function AddTransactionScreen() {
           amount: amountNum,
           description: description.trim(),
           category: "Transfer",
-          fromWalletId: parseInt(fromWalletId),
-          toWalletId: parseInt(toWalletId),
-          transferFee: parseRupiah(transferFee),
+          fromWalletId: fromWalletId || undefined,
+          toWalletId: toWalletId || undefined,
+          transferFee: parseCurrency(transferFee),
           notes: notes.trim() || undefined,
         });
       } else {
@@ -274,10 +256,10 @@ export function AddTransactionScreen() {
           amount: amountNum,
           description: description.trim(),
           category: categoryValue,
-          walletId: parseInt(walletId),
+          walletId: walletId || undefined,
           notes: notes.trim() || undefined,
           items: useItemDetails && items.length > 0
-            ? items.map(i => ({ name: i.name.trim() || "Item", price: parseRupiah(i.price) }))
+            ? items.map(i => ({ name: i.name.trim() || "Item", price: parseCurrency(i.price) }))
             : undefined,
         });
       }

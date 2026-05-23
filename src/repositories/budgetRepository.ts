@@ -1,31 +1,73 @@
 import { db, type Budget } from "@/db/db";
 
 export const budgetRepository = {
+  /**
+   * Get all active (non-deleted) budgets
+   */
   async getAllBudgets(): Promise<Budget[]> {
-    return await db.budgets.toArray();
+    return db.budgets.filter(b => !b.isDeleted).toArray();
   },
 
-  async getBudgetById(id: number): Promise<Budget | undefined> {
-    return await db.budgets.get(id);
+  async getBudgetById(id: string): Promise<Budget | undefined> {
+    return db.budgets.get(id);
   },
 
   async getBudgetByName(name: string): Promise<Budget | undefined> {
-    return await db.budgets.where("name").equals(name).first();
+    return db.budgets.filter(b => !b.isDeleted && b.name === name).first();
   },
 
-  async addBudget(budget: Omit<Budget, "id">) {
+  /**
+   * Add a new budget with UUID and dirty flag
+   */
+  async addBudget(budget: Omit<Budget, "id" | "serverId" | "updatedAt" | "isDirty" | "isDeleted">) {
     const existing = await this.getBudgetByName(budget.name);
-    if (existing && existing.id) {
+    if (existing) {
       throw new Error("Anggaran dengan nama ini sudah ada.");
     }
-    return await db.budgets.add(budget);
+    const newBudget: Budget = {
+      ...budget,
+      id: crypto.randomUUID(),
+      updatedAt: Date.now(),
+      isDirty: true,
+      isDeleted: false,
+    };
+    await db.budgets.add(newBudget);
+    return newBudget.id;
   },
 
-  async updateBudget(id: number, data: Partial<Budget>): Promise<number> {
-    return await db.budgets.update(id, data);
+  /**
+   * Update a budget — marks as dirty
+   */
+  async updateBudget(id: string, data: Partial<Omit<Budget, "id">>): Promise<number> {
+    return db.budgets.update(id, {
+      ...data,
+      updatedAt: Date.now(),
+      isDirty: true,
+    });
   },
 
-  async deleteBudget(id: number): Promise<void> {
-    return await db.budgets.delete(id);
+  /**
+   * Soft-delete a budget
+   */
+  async deleteBudget(id: string): Promise<void> {
+    await db.budgets.update(id, {
+      isDeleted: true,
+      isDirty: true,
+      updatedAt: Date.now(),
+    });
+  },
+
+  /**
+   * Get all dirty (unsynced) budgets
+   */
+  async getDirty(): Promise<Budget[]> {
+    return db.budgets.filter(b => b.isDirty).toArray();
+  },
+
+  /**
+   * Bulk upsert budgets from server
+   */
+  async bulkUpsertFromServer(budgets: Budget[]): Promise<void> {
+    await db.budgets.bulkPut(budgets);
   },
 };

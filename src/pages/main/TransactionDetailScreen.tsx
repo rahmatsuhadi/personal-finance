@@ -4,7 +4,7 @@ import { AppHeader } from "@/components/atoms/AppHeader";
 import { BrutalButton } from "@/components/atoms/BrutalButton";
 import { BrutalBadge } from "@/components/atoms/BrutalBadge";
 import { ConfirmModal } from "@/components/atoms/ConfirmModal";
-import { cn } from "@/lib/utils";
+import { cn, formatIDR } from "@/lib/utils";
 import { db, type Transaction } from "@/db/db";
 import { useWallets } from "@/hooks/useWallets";
 import { useTransactions } from "@/hooks/useTransactions";
@@ -13,14 +13,6 @@ import { id as idLocale } from "date-fns/locale";
 import { Pencil, Trash2 } from "lucide-react";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
-
-function formatIDR(amount: number): string {
-  return new Intl.NumberFormat("id-ID", {
-    style: "currency",
-    currency: "IDR",
-    minimumFractionDigits: 0,
-  }).format(amount);
-}
 
 function formatDate(dateStr: string): string {
   const [y, m, d] = dateStr.split("-").map(Number);
@@ -73,7 +65,7 @@ export function TransactionDetailScreen() {
 
   useEffect(() => {
     if (id) {
-      db.transactions.get(parseInt(id)).then((tx) => {
+      db.transactions.get(id).then((tx) => {
         if (tx) setTransaction(tx);
         else navigate(-1);
       });
@@ -90,9 +82,9 @@ export function TransactionDetailScreen() {
 
   const meta = TYPE_META[transaction.type];
 
-  function getWalletName(wid?: number): string {
+  function getWalletName(wid?: string): string {
     if (!wid) return "—";
-    return wallets.find((w) => w.id === wid)?.name ?? `Dompet #${wid}`;
+    return wallets.find((w) => w.id === wid)?.name ?? `Dompet`;
   }
 
   function handleEdit() {
@@ -100,7 +92,7 @@ export function TransactionDetailScreen() {
   }
 
   async function handleDeleteConfirm() {
-    await removeTransaction(transaction!.id!);
+    await removeTransaction(transaction!.id);
     setDeleteOpen(false);
     navigate(-1);
   }

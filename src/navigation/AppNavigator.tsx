@@ -56,7 +56,7 @@ export function AppNavigator() {
           settings: <SettingsScreen />,
         }}
       />
-      
+
       {/* Stack screens on top of TabNavigator */}
       <Routes>
         <Route path="/transaction/:id" element={

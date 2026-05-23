@@ -26,6 +26,7 @@
     "@react-navigation/native": "^7.2.4",
     "@tailwindcss/vite": "^4.2.1",
     "android": "^0.0.8",
+    "better-auth": "^1.6.11",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "date-fns": "^4.1.0",

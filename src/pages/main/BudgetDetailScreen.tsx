@@ -23,7 +23,7 @@ export function BudgetDetailScreen() {
 
   // Ambil semua progress, dan cari yang cocok dengan id anggaran
   const { progresses } = useBudgetProgress();
-  const progress = progresses.find((p) => p.budget.id === Number(id)) || null;
+  const progress = progresses.find((p) => p.budget.id === id) || null;
 
   const [historyData, setHistoryData] = useState<any[]>([]);
   const [currentTransactions, setCurrentTransactions] = useState<Transaction[]>([]);
@@ -69,7 +69,7 @@ export function BudgetDetailScreen() {
         const endStr = format(endDate, "yyyy-MM-dd");
 
         const total = txs
-          .filter(t => t.type === "expense" && t.date >= startStr && t.date <= endStr)
+          .filter(t => t.type === "expense" && t.date >= startStr && t.date <= endStr && !t.isDeleted)
           .reduce((sum, t) => sum + t.amount, 0);
 
         results.push({
@@ -111,7 +111,7 @@ export function BudgetDetailScreen() {
         .toArray();
 
       return txs
-        .filter(t => t.type === "expense" && t.date >= startStr && t.date <= endStr)
+        .filter(t => t.type === "expense" && t.date >= startStr && t.date <= endStr && !t.isDeleted)
         .sort((a, b) => b.date.localeCompare(a.date));
     }).subscribe({
       next: (data) => setCurrentTransactions(data),

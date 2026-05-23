@@ -1,5 +1,14 @@
 import Dexie, { type EntityTable } from "dexie";
 
+// ─── Sync Metadata ────────────────────────────────────────────────────────────
+
+export interface SyncMeta {
+  serverId?: string;   // ID dari server (setelah sync berhasil)
+  updatedAt: number;   // Unix timestamp ms (Last-Write-Wins)
+  isDirty: boolean;    // Apakah ada perubahan lokal yang belum di-sync
+  isDeleted: boolean;  // Soft delete flag
+}
+
 // ─── Type Definitions ────────────────────────────────────────────────────────
 
 export interface UserProfile {
@@ -7,8 +16,8 @@ export interface UserProfile {
   name: string;
 }
 
-export interface Wallet {
-  id?: number;
+export interface Wallet extends SyncMeta {
+  id: string;  // UUID string
   name: string;
   currency: "IDR" | "USD";
   colorClass: string;
@@ -20,33 +29,33 @@ export interface TransactionItem {
   price: number;
 }
 
-export interface Transaction {
-  id?: number;
+export interface Transaction extends SyncMeta {
+  id: string;  // UUID string
   type: "income" | "expense" | "transfer";
   date: string; // ISO date string YYYY-MM-DD
   amount: number;
   description: string;
   category: string;
-  walletId?: number;
-  fromWalletId?: number;
-  toWalletId?: number;
+  walletId?: string;
+  fromWalletId?: string;
+  toWalletId?: string;
   transferFee?: number;
   notes?: string;
   items?: TransactionItem[];
 }
 
-export interface Category {
-  id?: number;
+export interface Category extends SyncMeta {
+  id: string;  // UUID string
   name: string;
   type: "income" | "expense";
   icon?: string;
   colorClass?: string;
 }
 
-export interface Budget {
-  id?: number;
+export interface Budget extends SyncMeta {
+  id: string;  // UUID string
   name: string;
-  categoryIds: number[];
+  categoryIds: string[];
   amount: number;
   cycle: "weekly" | "monthly" | "yearly";
 }
@@ -100,6 +109,82 @@ class BrutalistFinanceDB extends Dexie {
     this.version(5).stores({
       transactions: "++id, type, date, amount, category, walletId",
     });
+
+    // ── v6: Migrate to UUID string IDs + sync metadata ───────────────────────
+    this.version(6).stores({
+      wallets: "id, name, currency, isDirty, isDeleted, updatedAt",
+      transactions: "id, type, date, amount, category, walletId, isDirty, isDeleted, updatedAt",
+      categories: "id, name, type, isDirty, isDeleted, updatedAt",
+      budgets: "id, name, *categoryIds, isDirty, isDeleted, updatedAt",
+    }).upgrade(async tx => {
+      const now = Date.now();
+
+      // ── Wallets ──────────────────────────────────────────────────────────
+      const oldWallets = await tx.table("wallets").toArray();
+      const walletIdMap = new Map<number, string>(); // old numeric ID → new UUID
+      await tx.table("wallets").clear();
+      for (const w of oldWallets) {
+        const newId = crypto.randomUUID();
+        walletIdMap.set(w.id, newId);
+        await tx.table("wallets").add({
+          ...w,
+          id: newId,
+          serverId: undefined,
+          updatedAt: now,
+          isDirty: true,
+          isDeleted: false,
+        });
+      }
+
+      // ── Categories ───────────────────────────────────────────────────────
+      const oldCategories = await tx.table("categories").toArray();
+      const categoryIdMap = new Map<number, string>();
+      await tx.table("categories").clear();
+      for (const c of oldCategories) {
+        const newId = crypto.randomUUID();
+        categoryIdMap.set(c.id, newId);
+        await tx.table("categories").add({
+          ...c,
+          id: newId,
+          serverId: undefined,
+          updatedAt: now,
+          isDirty: true,
+          isDeleted: false,
+        });
+      }
+
+      // ── Transactions ─────────────────────────────────────────────────────
+      const oldTransactions = await tx.table("transactions").toArray();
+      await tx.table("transactions").clear();
+      for (const t of oldTransactions) {
+        await tx.table("transactions").add({
+          ...t,
+          id: crypto.randomUUID(),
+          walletId: t.walletId != null ? walletIdMap.get(t.walletId) ?? undefined : undefined,
+          fromWalletId: t.fromWalletId != null ? walletIdMap.get(t.fromWalletId) ?? undefined : undefined,
+          toWalletId: t.toWalletId != null ? walletIdMap.get(t.toWalletId) ?? undefined : undefined,
+          serverId: undefined,
+          updatedAt: now,
+          isDirty: true,
+          isDeleted: false,
+        });
+      }
+
+      // ── Budgets ──────────────────────────────────────────────────────────
+      const oldBudgets = await tx.table("budgets").toArray();
+      await tx.table("budgets").clear();
+      for (const b of oldBudgets) {
+        await tx.table("budgets").add({
+          ...b,
+          id: crypto.randomUUID(),
+          categoryIds: (b.categoryIds ?? []).map((cId: number) => categoryIdMap.get(cId) ?? String(cId)),
+          serverId: undefined,
+          updatedAt: now,
+          isDirty: true,
+          isDeleted: false,
+        });
+      }
+    });
   }
 }
 
@@ -110,7 +195,7 @@ export const db = new BrutalistFinanceDB();
 
 let _seeded = false;
 
-export const DEFAULT_CATEGORIES: Category[] = [
+export const DEFAULT_CATEGORIES: Omit<Category, "id" | "serverId" | "updatedAt" | "isDirty" | "isDeleted"> [] = [
   { name: "Gaji", type: "income", icon: "Banknote", colorClass: "brutal-emerald" },
   { name: "Bisnis", type: "income", icon: "Briefcase", colorClass: "brutal-blue" },
   { name: "Investasi", type: "income", icon: "TrendingUp", colorClass: "brutal-purple" },
@@ -130,16 +215,18 @@ export async function seedDefaultData() {
   if (_seeded) return;
   _seeded = true;
 
+  const now = Date.now();
+
   // ── Categories: dedup then add missing ──────────────────────────────────
-  const allCats = await db.categories.toArray();
+  const allCats = await db.categories.filter(c => !c.isDeleted).toArray();
 
   // Remove duplicates (keep first occurrence of each name+type)
   const seen = new Set<string>();
-  const toDelete: number[] = [];
+  const toDelete: string[] = [];
   for (const cat of allCats) {
     const key = `${cat.type}::${cat.name}`;
     if (seen.has(key)) {
-      if (cat.id != null) toDelete.push(cat.id);
+      toDelete.push(cat.id);
     } else {
       seen.add(key);
     }
@@ -149,13 +236,13 @@ export async function seedDefaultData() {
   }
 
   // Add any missing default categories and fix missing icons
-  const existingCats = await db.categories.toArray();
+  const existingCats = await db.categories.filter(c => !c.isDeleted).toArray();
   const existingKeys = new Set(existingCats.map((c) => `${c.type}::${c.name}`));
 
   for (const c of existingCats) {
     if (!c.icon || c.icon === "Tag") {
       const def = DEFAULT_CATEGORIES.find(d => d.name === c.name && d.type === c.type);
-      if (def && c.id != null) {
+      if (def) {
         await db.categories.update(c.id, { icon: def.icon, colorClass: def.colorClass });
       }
     }
@@ -165,15 +252,22 @@ export async function seedDefaultData() {
     (c) => !existingKeys.has(`${c.type}::${c.name}`)
   );
   if (missingCats.length > 0) {
-    await db.categories.bulkAdd(missingCats);
+    await db.categories.bulkAdd(
+      missingCats.map(c => ({
+        ...c,
+        id: crypto.randomUUID(),
+        updatedAt: now,
+        isDirty: true,
+        isDeleted: false,
+      }))
+    );
   }
 
   // ── Wallets: seed only if empty ─────────────────────────────────────────
-  const walletCount = await db.wallets.count();
+  const walletCount = await db.wallets.filter(w => !w.isDeleted).count();
   if (walletCount === 0) {
     await db.wallets.bulkAdd([
-      { name: "Kas", currency: "IDR", colorClass: "brutal-lime", balance: 0 },
-      // { name: "Bank BCA", currency: "IDR", colorClass: "brutal-cyan", balance: 0 },
+      { id: crypto.randomUUID(), name: "Kas", currency: "IDR", colorClass: "brutal-lime", balance: 0, updatedAt: now, isDirty: true, isDeleted: false },
     ]);
   }
 }
