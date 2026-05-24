@@ -8,11 +8,13 @@ import {
   SelectPickerScreen,
   type SelectOption,
 } from "@/components/molecules/SelectPickerScreen";
+import { ScannerOverlay } from "@/components/molecules/ScannerOverlay";
 import { cn, formatIDR, formatRupiah, parseCurrency } from "@/lib/utils";
 import {
   TrendingUp,
   TrendingDown,
   ArrowLeftRight,
+  Maximize,
 } from "lucide-react";
 import * as LucideIcons from "lucide-react";
 import { format } from "date-fns";
@@ -77,6 +79,7 @@ export function AddTransactionScreen() {
   const [activeType, setActiveType] = useState<TxType>("expense");
   const [categories, setCategories] = useState<Category[]>([]);
   const [activePicker, setActivePicker] = useState<"category" | "wallet" | "fromWallet" | "toWallet" | null>(null);
+  const [scannerOpen, setScannerOpen] = useState(false);
   const [transferFee, setTransferFee] = useState("");
 
   // ── Form State ───────────────────────────────────────────────────────────
@@ -160,6 +163,27 @@ export function AddTransactionScreen() {
     setUseItemDetails(false);
     setItems([]);
     setErrors({});
+  }
+
+  // ── Scanner Logic ───────────────────────────────────────────────────────────
+
+  function handleScanResult(data: any) {
+    setActiveType(data.type);
+    setAmount(data.amount);
+    setDescription(data.description);
+    setCategoryValue(data.category);
+    setCategoryLabel(data.category);
+    setDate(data.date);
+
+    if (data.useItemDetails) {
+      setUseItemDetails(true);
+      setItems(data.items);
+    } else {
+      setUseItemDetails(false);
+      setItems([]);
+    }
+
+    setScannerOpen(false);
   }
 
   // ── Stack Pickers ─────────────────────────────────────────────────────────
@@ -285,10 +309,17 @@ export function AddTransactionScreen() {
       style={{ paddingTop: "var(--safe-top)" }}
     >
       {/* ── Header ─────────────────────────────────────────────────────────── */}
-      <div className="border-b-4 border-brutal-black bg-brutal-black px-4 py-4">
+      <div className="border-b-4 border-brutal-black bg-brutal-black px-4 py-4 flex items-center justify-between">
         <h1 className="text-xl font-black text-white uppercase tracking-tight">
           Tambah Transaksi
         </h1>
+        <button
+          onClick={() => setScannerOpen(true)}
+          className="flex h-10 w-10 items-center justify-center border-2 border-brutal-lime bg-transparent text-brutal-lime brutal-press"
+          aria-label="Buka scanner AI"
+        >
+          <Maximize size={20} strokeWidth={2.5} />
+        </button>
       </div>
 
       {/* ── Type Tabs ───────────────────────────────────────────────────────── */}
@@ -676,6 +707,14 @@ export function AddTransactionScreen() {
             onClose={() => setActivePicker(null)}
           />
         </div>
+      )}
+      {/* ── Scanner Overlay ── */}
+      {scannerOpen && (
+        <ScannerOverlay
+          onClose={() => setScannerOpen(false)}
+          onResult={handleScanResult}
+          localCategories={categories.map(c => c.name).join(",")}
+        />
       )}
     </div>
   );
