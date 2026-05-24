@@ -81,9 +81,11 @@ export function WalletFormModal({
     setIsLoading(true);
     try {
       await onSave({ name: name.trim(), currency, colorClass, balance: balanceNum });
+      toast.success(mode === "edit" ? "Dompet berhasil diperbarui!" : "Dompet berhasil ditambahkan!");
       onClose();
     } catch (e) {
       console.error(e);
+      toast.error("Gagal menyimpan dompet.");
     } finally {
       setIsLoading(false);
     }

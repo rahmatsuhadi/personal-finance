@@ -7,20 +7,18 @@ import { useAuth } from "@/hooks/useAuth";
 interface SyncContextType {
   status: SyncStatus;
   lastSyncAt: number | null;
-  syncNow: () => Promise<void>;
+  backup: () => Promise<void>;
+  restore: () => Promise<void>;
 }
 
 const SyncContext = createContext<SyncContextType>({
   status: "idle",
   lastSyncAt: null,
-  syncNow: async () => {},
+  backup: async () => {},
+  restore: async () => {},
 });
 
-// ─── Inner component that actually runs useSync ───────────────────────────────
-// Separated so useSync is always called unconditionally (Rules of Hooks).
-
 function SyncInner({ children, isCloudConnected }: { children: ReactNode; isCloudConnected: boolean }) {
-  // isCloudConnected comes from AuthContext (already fetched) — no extra getSession() call
   const sync = useSync(isCloudConnected);
 
   return (
@@ -29,8 +27,6 @@ function SyncInner({ children, isCloudConnected }: { children: ReactNode; isClou
     </SyncContext.Provider>
   );
 }
-
-// ─── SyncProvider ─────────────────────────────────────────────────────────────
 
 export function SyncProvider({ children }: { children: ReactNode }) {
   const { isCloudConnected } = useAuth();

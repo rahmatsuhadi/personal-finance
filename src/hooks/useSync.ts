@@ -1,45 +1,11 @@
-import { useState, useEffect, useCallback, useRef } from "react";
-import { transactionRepository } from "@/repositories/transactionRepository";
-import { walletRepository } from "@/repositories/walletRepository";
-import { categoryRepository } from "@/repositories/categoryRepository";
-import { budgetRepository } from "@/repositories/budgetRepository";
-import type { Transaction, Wallet, Category, Budget } from "@/db/db";
-
-// ─── Types ────────────────────────────────────────────────────────────────────
+import { useState, useCallback, useRef } from "react";
+import { db } from "@/db/db";
+import { CONFIG } from "@/config";
 
 export type SyncStatus = "idle" | "syncing" | "success" | "error" | "offline";
 
 const LAST_SYNC_KEY = "kanti_last_sync_ts";
-const SYNC_INTERVAL_MS = 5 * 60 * 1000; // 5 minutes
-
-const baseURL = import.meta.env.VITE_API_URL ?? "http://localhost:5000";
-
-// ─── API contract ─────────────────────────────────────────────────────────────
-
-interface SyncRequestBody {
-  lastSyncTimestamp: string; // ISO string, or "" for initial sync
-  changes: {
-    wallets: Wallet[];
-    transactions: Transaction[];
-    categories: Category[];
-    budgets: Budget[];
-  };
-}
-
-interface SyncResponse {
-  success: boolean;
-  syncTimestamp: string; // ISO string
-  data: {
-    wallets: Wallet[];
-    transactions: Transaction[];
-    categories: Category[];
-    budgets: Budget[];
-  };
-}
-
-// ─── useSync Hook ─────────────────────────────────────────────────────────────
-// `isAuthenticated` is passed from SyncContext (sourced from AuthContext)
-// to avoid redundant getSession() calls — AuthContext already fetches it once.
+const baseURL = CONFIG.API_URL;
 
 export function useSync(isAuthenticated: boolean) {
   const [status, setStatus] = useState<SyncStatus>("idle");
@@ -49,133 +15,114 @@ export function useSync(isAuthenticated: boolean) {
   });
   const syncingRef = useRef(false);
 
-  // ── Core sync function ───────────────────────────────────────────────────
-
-  const sync = useCallback(async () => {
-    if (syncingRef.current) return;
-
-    if (!navigator.onLine) {
-      setStatus("offline");
+  /**
+   * BACKUP: Manual Push ALL data to server
+   */
+  const backup = useCallback(async () => {
+    if (!CONFIG.SYNC_ENABLED) {
+      console.log("[Sync] Backup is disabled.");
       return;
     }
-
-    // Guard: session state already resolved by AuthContext — no extra network call
-    if (!isAuthenticated) {
-      setStatus("idle");
-      return;
-    }
+    if (syncingRef.current || !isAuthenticated) return;
+    if (!navigator.onLine) { setStatus("offline"); return; }
 
     syncingRef.current = true;
     setStatus("syncing");
 
     try {
-      const isInitialSync = lastSyncAt === null;
-
-      // ── Collect all dirty local records ──────────────────────────────────
-      const [dirtyTx, dirtyWallets, dirtyCats, dirtyBudgets] = await Promise.all([
-        transactionRepository.getDirty(),
-        walletRepository.getDirty(),
-        categoryRepository.getDirty(),
-        budgetRepository.getDirty(),
+      // Get EVERYTHING (even non-dirty) to ensure full backup
+      const [txs, wallets, cats, budgets] = await Promise.all([
+        db.transactions.toArray(),
+        db.wallets.toArray(),
+        db.categories.toArray(),
+        db.budgets.toArray(),
       ]);
 
-      // ── Single request: push dirty + pull server delta ───────────────────
-      const body: SyncRequestBody = {
-        lastSyncTimestamp: isInitialSync ? "" : new Date(lastSyncAt).toISOString(),
-        changes: {
-          wallets: dirtyWallets,
-          transactions: dirtyTx,
-          categories: dirtyCats,
-          budgets: dirtyBudgets,
-        },
-      };
-
-      const res = await fetch(`${baseURL}/api/sync/`, {
+      const res = await fetch(`${baseURL}/api/sync/backup`, {
         method: "POST",
         credentials: "include",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body),
+        body: JSON.stringify({
+          changes: { wallets, transactions: txs, categories: cats, budgets }
+        }),
       });
 
-      if (!res.ok) {
-        const text = await res.text().catch(() => "Unknown error");
-        throw new Error(`[Sync] ${res.status}: ${text}`);
-      }
+      if (!res.ok) throw new Error(`[Backup] Server error: ${res.status}`);
+      const result = await res.json();
+      if (!result.success) throw new Error("[Backup] Failed on server");
 
-      const result: SyncResponse = await res.json();
-
-      if (!result.success) {
-        throw new Error("[Sync] Server returned success: false");
-      }
-
-      // ── Mark pushed records as clean ─────────────────────────────────────
+      // Mark everything as clean after successful backup
       await Promise.all([
-        ...dirtyTx.map(t => transactionRepository.markSynced(t.id, t.serverId ?? t.id)),
-        ...dirtyWallets.map(w => walletRepository.markSynced(w.id, w.serverId ?? w.id)),
-        ...dirtyCats.map(c => categoryRepository.update(c.id, { isDirty: false })),
-        ...dirtyBudgets.map(b => budgetRepository.updateBudget(b.id, { isDirty: false })),
+        db.transactions.where("isDirty").equals(1).modify({ isDirty: false }),
+        db.wallets.where("isDirty").equals(1).modify({ isDirty: false }),
+        db.categories.where("isDirty").equals(1).modify({ isDirty: false }),
+        db.budgets.where("isDirty").equals(1).modify({ isDirty: false }),
       ]);
 
-      // ── Merge server data into Dexie (bulkPut = upsert) ──────────────────
-      const { wallets, transactions, categories, budgets } = result.data;
-
-      if (wallets.length > 0) {
-        await walletRepository.bulkUpsertFromServer(
-          wallets.map(w => ({ ...w, isDirty: false }))
-        );
-      }
-      if (transactions.length > 0) {
-        await transactionRepository.bulkUpsertFromServer(
-          transactions.map(t => ({ ...t, isDirty: false }))
-        );
-      }
-      if (categories.length > 0) {
-        await categoryRepository.bulkUpsertFromServer(
-          categories.map(c => ({ ...c, isDirty: false }))
-        );
-      }
-      if (budgets.length > 0) {
-        await budgetRepository.bulkUpsertFromServer(
-          budgets.map(b => ({ ...b, isDirty: false }))
-        );
-      }
-
-      // ── Persist sync timestamp ────────────────────────────────────────────
-      const newTimestamp = new Date(result.syncTimestamp).getTime();
-      localStorage.setItem(LAST_SYNC_KEY, String(newTimestamp));
-      setLastSyncAt(newTimestamp);
+      const now = Date.now();
+      localStorage.setItem(LAST_SYNC_KEY, String(now));
+      setLastSyncAt(now);
       setStatus("success");
-
-      console.log(`[Sync] ${isInitialSync ? "Initial" : "Delta"} sync OK. ts: ${result.syncTimestamp}`);
+      console.log("[Backup] Full backup completed successfully");
     } catch (err) {
-      console.error("[Sync] Failed:", err);
+      console.error("[Backup] Error:", err);
       setStatus("error");
     } finally {
       syncingRef.current = false;
     }
-  }, [lastSyncAt, isAuthenticated]);
+  }, [isAuthenticated]);
 
-  // ── Auto-sync on mount (or when auth becomes true) + interval ────────────
+  /**
+   * RESTORE: Manual Pull ALL data from server
+   */
+  const restore = useCallback(async () => {
+    if (!CONFIG.SYNC_ENABLED) {
+      console.log("[Sync] Restore is disabled.");
+      return;
+    }
+    if (syncingRef.current || !isAuthenticated) return;
+    if (!navigator.onLine) { setStatus("offline"); return; }
 
-  useEffect(() => {
-    if (!isAuthenticated) return;
+    syncingRef.current = true;
+    setStatus("syncing");
 
-    sync();
+    try {
+      const res = await fetch(`${baseURL}/api/sync/restore`, {
+        method: "GET",
+        credentials: "include",
+      });
 
-    const interval = setInterval(sync, SYNC_INTERVAL_MS);
-    const handleOnline = () => sync();
-    window.addEventListener("online", handleOnline);
+      if (!res.ok) throw new Error(`[Restore] Server error: ${res.status}`);
+      const result = await res.json();
+      if (!result.success) throw new Error("[Restore] Failed on server");
 
-    return () => {
-      clearInterval(interval);
-      window.removeEventListener("online", handleOnline);
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isAuthenticated]); // Re-trigger when user logs in
+      const { wallets, transactions, categories, budgets } = result.data;
+
+      // Overwrite local data with server data
+      await db.transaction("rw", [db.wallets, db.transactions, db.categories, db.budgets], async () => {
+        if (categories.length > 0) await db.categories.bulkPut(categories.map((c: any) => ({ ...c, isDirty: false })));
+        if (wallets.length > 0) await db.wallets.bulkPut(wallets.map((w: any) => ({ ...w, isDirty: false })));
+        if (transactions.length > 0) await db.transactions.bulkPut(transactions.map((t: any) => ({ ...t, isDirty: false })));
+        if (budgets.length > 0) await db.budgets.bulkPut(budgets.map((b: any) => ({ ...b, isDirty: false })));
+      });
+
+      const now = Date.now();
+      localStorage.setItem(LAST_SYNC_KEY, String(now));
+      setLastSyncAt(now);
+      setStatus("success");
+      console.log("[Restore] Data restored from server successfully");
+    } catch (err) {
+      console.error("[Restore] Error:", err);
+      setStatus("error");
+    } finally {
+      syncingRef.current = false;
+    }
+  }, [isAuthenticated]);
 
   return {
     status,
     lastSyncAt,
-    syncNow: sync,
+    backup,
+    restore,
   };
 }

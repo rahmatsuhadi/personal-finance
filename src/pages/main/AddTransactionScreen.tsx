@@ -68,22 +68,6 @@ const COLOR_HEX: Record<string, string> = {
   "brutal-orange": "#ff8c00",
 };
 
-// ─── Success Toast ────────────────────────────────────────────────────────────
-
-function SuccessToast({ visible }: { visible: boolean }) {
-  if (!visible) return null;
-  return (
-    <div className="fixed top-4 left-4 right-4 z-[999] flex items-center gap-3 border-2 border-brutal-black bg-brutal-emerald p-3 shadow-brutal-md animate-in slide-in-from-top duration-200">
-      <div className="flex h-7 w-7 items-center justify-center border-2 border-brutal-black bg-brutal-black">
-        <Check size={14} strokeWidth={3} className="text-brutal-emerald" />
-      </div>
-      <p className="font-black text-sm uppercase tracking-wide">
-        Transaksi berhasil disimpan!
-      </p>
-    </div>
-  );
-}
-
 // ─── AddTransactionScreen ─────────────────────────────────────────────────────
 
 export function AddTransactionScreen() {
@@ -301,8 +285,6 @@ export function AddTransactionScreen() {
       className="flex flex-col min-h-full bg-brutal-bg"
       style={{ paddingTop: "var(--safe-top)" }}
     >
-      <SuccessToast visible={showSuccess} />
-
       {/* ── Header ─────────────────────────────────────────────────────────── */}
       <div className="border-b-4 border-brutal-black bg-brutal-black px-4 py-4">
         <h1 className="text-xl font-black text-white uppercase tracking-tight">
@@ -699,3 +681,4 @@ export function AddTransactionScreen() {
     </div>
   );
 }
+

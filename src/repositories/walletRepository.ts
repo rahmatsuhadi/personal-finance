@@ -26,7 +26,7 @@ export const walletRepository = {
       ...wallet,
       id: crypto.randomUUID(),
       updatedAt: Date.now(),
-      isDirty: true,
+      isDirty: false, // Sync disabled
       isDeleted: false,
     };
     await db.wallets.add(newWallet);
@@ -40,7 +40,7 @@ export const walletRepository = {
     return db.wallets.update(id, {
       ...changes,
       updatedAt: Date.now(),
-      isDirty: true,
+      isDirty: false, // Sync disabled
     });
   },
 
@@ -50,7 +50,7 @@ export const walletRepository = {
   async remove(id: string): Promise<void> {
     await db.wallets.update(id, {
       isDeleted: true,
-      isDirty: true,
+      isDirty: false, // Sync disabled
       updatedAt: Date.now(),
     });
   },

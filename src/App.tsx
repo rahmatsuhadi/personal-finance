@@ -1,21 +1,20 @@
-import { useEffect } from "react";
 import { AppNavigator } from "@/navigation/AppNavigator";
-import { seedDefaultData } from "@/db/db";
+
 import { AuthProvider } from "@/contexts/AuthContext";
 import { SyncProvider } from "@/contexts/SyncContext";
+
+import { RestoreInitializer } from "@/components/SyncInitializer";
+import { Toaster } from "@/components/ui/sonner";
 
 // ─── App Root ─────────────────────────────────────────────────────────────────
 
 export default function App() {
-  useEffect(() => {
-    // Seed default categories and wallets on first launch
-    seedDefaultData().catch(console.error);
-  }, []);
-
   return (
     <AuthProvider>
       <SyncProvider>
+        <RestoreInitializer />
         <AppNavigator />
+        <Toaster />
       </SyncProvider>
     </AuthProvider>
   );

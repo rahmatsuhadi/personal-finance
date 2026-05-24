@@ -211,63 +211,60 @@ export const DEFAULT_CATEGORIES: Omit<Category, "id" | "serverId" | "updatedAt" 
   { name: "Lainnya (Pengeluaran)", type: "expense", icon: "MinusCircle", colorClass: "brutal-black" },
 ];
 
-export async function seedDefaultData() {
+export async function seedDefaultData(forceDirty = false) {
   if (_seeded) return;
   _seeded = true;
 
   const now = Date.now();
 
-  // ── Categories: dedup then add missing ──────────────────────────────────
-  const allCats = await db.categories.filter(c => !c.isDeleted).toArray();
+  // ── Check if the DB is truly empty (including deleted records) ──
+  const [catCount, walletCount, txCount] = await Promise.all([
+    db.categories.count(),
+    db.wallets.count(),
+    db.transactions.count(),
+  ]);
 
-  // Remove duplicates (keep first occurrence of each name+type)
-  const seen = new Set<string>();
-  const toDelete: string[] = [];
-  for (const cat of allCats) {
-    const key = `${cat.type}::${cat.name}`;
-    if (seen.has(key)) {
-      toDelete.push(cat.id);
-    } else {
-      seen.add(key);
-    }
-  }
-  if (toDelete.length > 0) {
-    await db.categories.bulkDelete(toDelete);
-  }
+  const isEmpty = catCount === 0 && walletCount === 0 && txCount === 0;
 
-  // Add any missing default categories and fix missing icons
-  const existingCats = await db.categories.filter(c => !c.isDeleted).toArray();
-  const existingKeys = new Set(existingCats.map((c) => `${c.type}::${c.name}`));
-
-  for (const c of existingCats) {
-    if (!c.icon || c.icon === "Tag") {
-      const def = DEFAULT_CATEGORIES.find(d => d.name === c.name && d.type === c.type);
-      if (def) {
-        await db.categories.update(c.id, { icon: def.icon, colorClass: def.colorClass });
+  if (!isEmpty) {
+    console.log("[Seed] Database not empty, skipping seeding.");
+    // Even if not empty, we can still fix missing icons/colors for existing categories
+    const existingCats = await db.categories.filter(c => !c.isDeleted).toArray();
+    for (const c of existingCats) {
+      if (!c.icon || c.icon === "Tag") {
+        const def = DEFAULT_CATEGORIES.find(d => d.name === c.name && d.type === c.type);
+        if (def) {
+          await db.categories.update(c.id, { icon: def.icon, colorClass: def.colorClass });
+        }
       }
     }
+    return;
   }
 
-  const missingCats = DEFAULT_CATEGORIES.filter(
-    (c) => !existingKeys.has(`${c.type}::${c.name}`)
+  console.log("[Seed] Seeding default data...");
+
+  // ── Categories ──────────────────────────────────────────────────────
+  await db.categories.bulkAdd(
+    DEFAULT_CATEGORIES.map(c => ({
+      ...c,
+      id: crypto.randomUUID(),
+      updatedAt: now,
+      isDirty: forceDirty,
+      isDeleted: false,
+    }))
   );
-  if (missingCats.length > 0) {
-    await db.categories.bulkAdd(
-      missingCats.map(c => ({
-        ...c,
-        id: crypto.randomUUID(),
-        updatedAt: now,
-        isDirty: true,
-        isDeleted: false,
-      }))
-    );
-  }
 
-  // ── Wallets: seed only if empty ─────────────────────────────────────────
-  const walletCount = await db.wallets.filter(w => !w.isDeleted).count();
-  if (walletCount === 0) {
-    await db.wallets.bulkAdd([
-      { id: crypto.randomUUID(), name: "Kas", currency: "IDR", colorClass: "brutal-lime", balance: 0, updatedAt: now, isDirty: true, isDeleted: false },
-    ]);
-  }
+  // ── Wallets ─────────────────────────────────────────────────────────
+  await db.wallets.bulkAdd([
+    { 
+      id: crypto.randomUUID(), 
+      name: "Kas", 
+      currency: "IDR", 
+      colorClass: "brutal-lime", 
+      balance: 0, 
+      updatedAt: now, 
+      isDirty: forceDirty, 
+      isDeleted: false 
+    },
+  ]);
 }

@@ -1,4 +1,4 @@
-import { db, type UserProfile } from "@/db/db";
+import { db, seedDefaultData, type UserProfile } from "@/db/db";
 
 // ─── User Profile Repository ──────────────────────────────────────────────────
 // Pure async functions — NO React hooks or JSX allowed here.
@@ -16,6 +16,8 @@ export const userRepository = {
    */
   async saveName(name: string): Promise<void> {
     await db.user_profile.put({ id: 1, name: name.trim() });
+    // Seed default data (categories & initial wallet) on first name save
+    await seedDefaultData();
   },
 
   /**
