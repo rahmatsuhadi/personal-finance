@@ -13,12 +13,12 @@ import {
   TrendingUp,
   TrendingDown,
   ArrowLeftRight,
-  Check,
 } from "lucide-react";
 import * as LucideIcons from "lucide-react";
 import { format } from "date-fns";
 import { liveQuery } from "dexie";
 import { db, type Category } from "@/db/db";
+import { toast } from "sonner";
 
 // ─── Tab Config ───────────────────────────────────────────────────────────────
 
@@ -76,7 +76,6 @@ export function AddTransactionScreen() {
 
   const [activeType, setActiveType] = useState<TxType>("expense");
   const [categories, setCategories] = useState<Category[]>([]);
-  const [showSuccess, setShowSuccess] = useState(false);
   const [activePicker, setActivePicker] = useState<"category" | "wallet" | "fromWallet" | "toWallet" | null>(null);
   const [transferFee, setTransferFee] = useState("");
 
@@ -268,11 +267,11 @@ export function AddTransactionScreen() {
       setUseItemDetails(false);
       setItems([]);
       setDate(format(new Date(), "yyyy-MM-dd"));
+      toast.success("Transaksi berhasil disimpan!");
 
-      setShowSuccess(true);
-      setTimeout(() => setShowSuccess(false), 2500);
     } catch (e) {
       console.error("[AddTransaction]", e);
+      toast.error("Gagal menyimpan transaksi.");
     } finally {
       setIsLoading(false);
     }

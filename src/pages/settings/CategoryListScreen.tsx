@@ -8,6 +8,7 @@ import { Plus, Pencil, Trash2 } from "lucide-react";
 import * as LucideIcons from "lucide-react";
 import type { Category } from "@/db/db";
 import { useNavigate } from "react-router-dom";
+import { toast } from "sonner";
 
 export function CategoryListScreen() {
   const navigate = useNavigate();
@@ -23,6 +24,7 @@ export function CategoryListScreen() {
   async function handleDeleteConfirm() {
     if (deletingCategory?.id) {
       await removeCategory(deletingCategory.id);
+      toast.success("Kategori berhasil dihapus!");
     }
     setDeletingCategory(null);
   }

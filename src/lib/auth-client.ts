@@ -1,4 +1,3 @@
-import type { UserProfile } from "@/db/db";
 import { createAuthClient } from "better-auth/client";
 
 // ─── Better Auth Client ───────────────────────────────────────────────────────

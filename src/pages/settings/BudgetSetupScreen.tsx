@@ -9,6 +9,7 @@ import * as LucideIcons from "lucide-react";
 import type { Budget } from "@/db/db";
 import { useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
+import { toast } from "sonner";
 
 export function BudgetSetupScreen() {
   const navigate = useNavigate();
@@ -20,6 +21,7 @@ export function BudgetSetupScreen() {
   async function handleDeleteConfirm() {
     if (deletingBudget?.id) {
       await removeBudget(deletingBudget.id);
+      toast.success("Anggaran berhasil dihapus!");
     }
     setDeletingBudget(null);
   }

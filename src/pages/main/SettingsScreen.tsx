@@ -8,6 +8,7 @@ import { BrutalButton } from "@/components/atoms/BrutalButton";
 import { User, LogOut, Wallet, Plus, Trash2, Pencil, Tags, Target } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import type { Wallet as WalletType } from "@/db/db";
+import { toast } from "sonner";
 // import CloudSyncActionCard from "@/components/molecules/CloudSyncActionCard";
 
 // ─── SettingsScreen ───────────────────────────────────────────────────────────
@@ -26,12 +27,14 @@ export function SettingsScreen() {
   async function handleLogoutConfirm() {
     await logout();
     setLogoutConfirmOpen(false);
+    toast.info("Berhasil logout.");
   }
 
   async function handleDeleteWalletConfirm() {
     if (!deletingWallet?.id) return;
     await removeWallet(deletingWallet.id);
     setDeletingWallet(null);
+    toast.success("Dompet berhasil dihapus!");
   }
 
 
@@ -39,6 +42,7 @@ export function SettingsScreen() {
     if (!editingWallet?.id) return;
     await updateWallet(editingWallet.id, data);
     setEditingWallet(null);
+    toast.success("Dompet berhasil diperbarui!");
   }
 
   return (

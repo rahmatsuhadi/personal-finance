@@ -1,7 +1,6 @@
 import { createContext, useContext, useState, useEffect, useCallback, useMemo, type ReactNode } from "react";
 import { liveQuery } from "dexie";
 import { db } from "@/db/db";
-import { CONFIG } from "@/config";
 import { userRepository } from "@/repositories/userRepository";
 import getSession, { authClient } from "@/lib/auth-client";
 import type { UserProfile } from "@/db/db";
