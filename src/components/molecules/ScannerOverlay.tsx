@@ -47,70 +47,71 @@ export function ScannerOverlay({ onClose, onResult, localCategories }: ScannerOv
     };
   }, []);
 
-  // ── Capture & Process ──
-  async function handleCapture() {
-    if (!stream || !videoRef.current || isProcessing) return;
+async function handleCapture() {
+  if (!stream || !videoRef.current || isProcessing) return;
 
-    setIsCapturing(true);
-    setIsProcessing(true);
+  setIsCapturing(true);
+  setIsProcessing(true);
 
-    // Simulate "Camera Flash" effect
-    setTimeout(() => setIsCapturing(false), 150);
+  // Simulate "Camera Flash" effect
+  setTimeout(() => setIsCapturing(false), 150);
 
-    try {
-      const canvas = canvasRef.current;
-      const video = videoRef.current;
-      if (!canvas) throw new Error("Canvas not found");
+  try {
+    const canvas = canvasRef.current;
+    const video = videoRef.current;
+    if (!canvas) throw new Error("Canvas not found");
 
-      // Set canvas dimensions to match video
-      canvas.width = video.videoWidth;
-      canvas.height = video.videoHeight;
-      const ctx = canvas.getContext("2d");
-      if (!ctx) throw new Error("Context not found");
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) throw new Error("Context not found");
 
-      // Draw current video frame to canvas
-      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
 
-      // Convert to Blob
-      const blob = await new Promise<Blob | null>((resolve) =>
-        canvas.toBlob((b) => resolve(b), "image/jpeg", 0.8)
-      );
+    const blob = await new Promise<Blob | null>((resolve) =>
+      canvas.toBlob((b) => resolve(b), "image/jpeg", 0.8)
+    );
 
-      if (!blob) throw new Error("Failed to capture image");
+    if (!blob) throw new Error("Failed to capture image");
 
-      // Prepare FormData
-      const formData = new FormData();
-      formData.append("image", blob, "receipt.jpg");
-      
-      // Send as JSON array string to match backend JSON.parse logic
-      const categoriesArray = localCategories.split(",").filter(c => c.trim() !== "");
-      formData.append("local_categories", JSON.stringify(categoriesArray));
+    const formData = new FormData();
+    formData.append("image", blob, "receipt.jpg");
+    
+    const categoriesArray = localCategories.split(",").map(c => c.trim()).filter(Boolean);
+    formData.append("local_categories", JSON.stringify(categoriesArray));
 
-      // Call Real Backend API
-      const response = await fetch(CONFIG.API_URL + "/api/ai/scan", {
-        method: "POST",
-        body: formData,
-        credentials: "include",
-      });
+    const response = await fetch(CONFIG.API_URL + "/api/ai/scan", {
+      method: "POST",
+      body: formData,
+      credentials: "include",
+    });
 
-      if (!response.ok) {
-        throw new Error(`API Error: ${response.statusText}`);
-      }
 
-      const result = await response.json();
-      
-      if (result.success && result.data) {
-        onResult(result.data);
-        toast.success("Nota berhasil dipindai!");
-      } else {
-        throw new Error(result.error || "Gagal menganalisis nota.");
-      }
-    } catch (err) {
-      console.error("Scanning error:", err);
-      toast.error("Gagal menganalisis nota. Coba lagi.");
-      setIsProcessing(false);
+    const result = await response.json();
+    
+    // PERUBAHAN DI SINI:
+    // AI sekarang mengembalikan properti 'success' di dalam JSON-nya.
+    // Jika success === true, lempar data ke onResult.
+    if (result.success) {
+      onResult(result); // result langsung berisi amount, description, dll.
+      toast.success("Nota berhasil dipindai!");
+    } else {
+      // Jika AI mengembalikan success: false, ambil pesan 'error' spesifik dari AI
+      // Contoh: "Gambar terlalu blur" atau "Bukan gambar nota"
+      throw new Error(result.error || "Gagal menganalisis nota.");
     }
+
+  } catch (err) {
+    console.error("Scanning error:", err);
+    // Menampilkan pesan error dinamis dari catch (bisa dari API atau error buatan sendiri)
+    const errorMessage = err instanceof Error ? err.message : "Gagal menganalisis nota. Coba lagi.";
+    toast.error(errorMessage);
+  } finally {
+    // Memastikan loading di-reset baik ketika sukses maupun gagal
+    setIsProcessing(false);
+    setIsCapturing(false);
   }
+}
 
   return (
     <div className="fixed inset-0 z-[100] bg-brutal-black flex flex-col overflow-hidden">
