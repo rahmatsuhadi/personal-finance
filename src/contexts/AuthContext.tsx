@@ -79,7 +79,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const loginWithGoogle = useCallback(async () => {
     await authClient.signIn.social({
       provider: "google",
-      callbackURL: `/`
+      callbackURL: `${import.meta.env.VITE_APP_URL}`, // Better Auth redirects here after login
     });
   }, []);
 
