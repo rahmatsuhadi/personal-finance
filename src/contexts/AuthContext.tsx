@@ -1,8 +1,9 @@
 import { createContext, useContext, useState, useEffect, useCallback, useMemo, type ReactNode } from "react";
 import { liveQuery } from "dexie";
 import { db } from "@/db/db";
+import { CONFIG } from "@/config";
 import { userRepository } from "@/repositories/userRepository";
-import { authClient } from "@/lib/auth-client";
+import getSession, { authClient } from "@/lib/auth-client";
 import type { UserProfile } from "@/db/db";
 
 interface AuthContextType {
@@ -39,11 +40,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // ── Cloud session (Better Auth) ───────────────────────────────────────────
   useEffect(() => {
     let cancelled = false;
-    authClient
-      .getSession()
-      .then(({ data }) => {
+    
+    getSession()
+      .then((data) => {
         if (cancelled) return;
-        if (data?.user) {
+        if (data && data.user) {
           setCloudSession(true);
           setCloudUser({
             id: data.user.id,
@@ -51,10 +52,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             email: data.user.email,
             image: data.user.image ?? undefined,
           });
-          // If local profile not set yet, auto-save cloud name
-          if (!user) {
-            userRepository.saveName(data.user.name).catch(console.error);
-          }
+          
+          // CRITICAL: If local profile not set yet, auto-save cloud name to trigger onboarding completion
+          userRepository.get().then(localUser => {
+            if (!localUser && data.user.name) {
+              console.log("[AuthContext] Cloud session found, initializing local profile with name:", data.user.name);
+              userRepository.saveName(data.user.name).catch(console.error);
+            }
+          });
         } else {
           setCloudSession(false);
           setCloudUser(null);
@@ -66,6 +71,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           setCloudUser(null);
         }
       });
+
     return () => {
       cancelled = true;
     };
@@ -79,7 +85,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const loginWithGoogle = useCallback(async () => {
     await authClient.signIn.social({
       provider: "google",
-      callbackURL: `${import.meta.env.VITE_APP_URL}`, // Better Auth redirects here after login
+      callbackURL: `${import.meta.env.VITE_APP_URL}/onboarding`, // Better Auth redirects here after login
     });
   }, []);
 

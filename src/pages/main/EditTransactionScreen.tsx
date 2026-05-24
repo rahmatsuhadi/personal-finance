@@ -21,6 +21,7 @@ import {
 import * as LucideIcons from "lucide-react";
 import { liveQuery } from "dexie";
 import { db, type Category, type Transaction } from "@/db/db";
+import { toast } from "sonner";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -215,6 +216,7 @@ export function EditTransactionScreen() {
     if (transaction) {
       await removeTransaction(transaction.id);
       setDeleteOpen(false);
+      toast.success("Transaksi berhasil dihapus!");
       navigate(-1);
     }
   }
@@ -265,9 +267,11 @@ export function EditTransactionScreen() {
           };
 
       await updateTransaction(transaction!.id!, changes);
+      toast.success("Transaksi berhasil diperbarui!");
       navigate(-1);
     } catch (e) {
       console.error(e);
+      toast.error("Gagal memperbarui transaksi.");
     } finally {
       setIsLoading(false);
     }

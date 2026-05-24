@@ -5,12 +5,12 @@ import { useTransactions, type FilterType, type FilterPeriod } from "@/hooks/use
 import { TransactionGroup } from "@/components/molecules/TransactionItem";
 import { WalletCard } from "@/components/molecules/WalletCard";
 import { BrutalButton } from "@/components/atoms/BrutalButton";
-import { SlidersHorizontal, TrendingUp, TrendingDown, Wallet, Sparkles, Inbox, AlertTriangle, CloudOff, Cloud, RefreshCw } from "lucide-react";
+import { SlidersHorizontal, TrendingUp, TrendingDown, Wallet, Sparkles, Inbox, AlertTriangle} from "lucide-react";
 import { useBudgetProgress } from "@/hooks/useBudgetProgress";
 import { formatIDR, cn } from "@/lib/utils";
 import { useNavigate } from "react-router-dom";
 import { type Transaction } from "@/db/db";
-import { useSyncContext } from "@/contexts/SyncContext";
+// import CloudSyncButton from "@/components/molecules/CloudSyncButton";
 
 
 // ─── Filter Drawer ────────────────────────────────────────────────────────────
@@ -187,8 +187,6 @@ export function HomeScreen() {
   const alertProgresses = progresses.filter((p) => p.status === "warning" || p.status === "critical");
 
   const firstName = user?.name?.split(" ")[0] ?? "Kamu";
-  const { status: syncStatus, syncNow } = useSyncContext();
-  const { isCloudConnected: cloudConnected } = useAuth();
 
   function handleTransactionClick(tx: Transaction) {
     navigate(`/transaction/${tx.id}`);
@@ -217,33 +215,9 @@ export function HomeScreen() {
           {/* Action buttons: Sync + Chatbot + Filter */}
           <div className="flex items-center gap-2">
             {/* Sync indicator */}
-            {cloudConnected && (
-              <button
-                id="home-sync-btn"
-                onClick={syncNow}
-                disabled={syncStatus === "syncing"}
-                className={cn(
-                  "flex h-10 w-10 items-center justify-center",
-                  "border-2 brutal-press",
-                  syncStatus === "syncing" && "border-brutal-yellow bg-brutal-yellow/20 animate-pulse",
-                  syncStatus === "success" && "border-brutal-lime bg-brutal-lime/20",
-                  syncStatus === "error" && "border-brutal-rose bg-brutal-rose/20",
-                  syncStatus === "offline" && "border-brutal-black/30 bg-transparent opacity-50",
-                  syncStatus === "idle" && "border-brutal-lime/50 bg-transparent",
-                )}
-                aria-label="Status sinkronisasi"
-              >
-                {syncStatus === "offline" ? (
-                  <CloudOff size={16} strokeWidth={2.5} className="text-brutal-black/50" />
-                ) : syncStatus === "syncing" ? (
-                  <RefreshCw size={16} strokeWidth={2.5} className="text-brutal-yellow animate-spin" />
-                ) : syncStatus === "error" ? (
-                  <CloudOff size={16} strokeWidth={2.5} className="text-brutal-rose" />
-                ) : (
-                  <Cloud size={16} strokeWidth={2.5} className="text-brutal-lime" />
-                )}
-              </button>
-            )}
+
+            {/* <CloudSyncButton /> */}
+            
 
             {/* AI Chatbot button */}
             <button

@@ -28,7 +28,7 @@ export const budgetRepository = {
       ...budget,
       id: crypto.randomUUID(),
       updatedAt: Date.now(),
-      isDirty: true,
+      isDirty: false, // Sync disabled
       isDeleted: false,
     };
     await db.budgets.add(newBudget);
@@ -42,7 +42,7 @@ export const budgetRepository = {
     return db.budgets.update(id, {
       ...data,
       updatedAt: Date.now(),
-      isDirty: true,
+      isDirty: false, // Sync disabled
     });
   },
 
@@ -52,7 +52,7 @@ export const budgetRepository = {
   async deleteBudget(id: string): Promise<void> {
     await db.budgets.update(id, {
       isDeleted: true,
-      isDirty: true,
+      isDirty: false, // Sync disabled
       updatedAt: Date.now(),
     });
   },

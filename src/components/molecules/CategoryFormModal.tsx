@@ -1,10 +1,11 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { BrutalButton } from "@/components/atoms/BrutalButton";
 import { BrutalInput } from "@/components/atoms/BrutalInput";
 import { cn } from "@/lib/utils";
 import { X } from "lucide-react";
 import * as LucideIcons from "lucide-react";
 import type { Category } from "@/db/db";
+import { toast } from "sonner";
 
 // ─── Options ──────────────────────────────────────────────────────────────────
 
@@ -55,6 +56,15 @@ export function CategoryFormModal({
   const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
+  // ── Reset Effect ───────────────────────────────────────────────────────────
+  // Automatically reset form state when modal is opened to prevent stale data
+  useEffect(() => {
+    if (open) {
+      reset();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, initialData, defaultType]);
+
   function reset() {
     setName(initialData?.name ?? "");
     setType(initialData?.type ?? defaultType);
@@ -78,9 +88,12 @@ export function CategoryFormModal({
     setIsLoading(true);
     try {
       await onSave({ name: name.trim(), type, colorClass, icon });
+      toast.success(mode === "edit" ? "Kategori berhasil diperbarui!" : "Kategori berhasil ditambahkan!");
+      reset(); // Reset after successful save
       onClose();
     } catch (e) {
       console.error(e);
+      toast.error("Gagal menyimpan kategori.");
     } finally {
       setIsLoading(false);
     }

@@ -41,7 +41,7 @@ export const transactionRepository = {
       ...transaction,
       id: crypto.randomUUID(),
       updatedAt: Date.now(),
-      isDirty: true,
+      isDirty: false, // Sync disabled
       isDeleted: false,
     };
     await db.transactions.add(newTx);
@@ -55,7 +55,7 @@ export const transactionRepository = {
     return db.transactions.update(id, {
       ...changes,
       updatedAt: Date.now(),
-      isDirty: true,
+      isDirty: false, // Sync disabled
     });
   },
 
@@ -65,7 +65,7 @@ export const transactionRepository = {
   async remove(id: string): Promise<void> {
     await db.transactions.update(id, {
       isDeleted: true,
-      isDirty: true,
+      isDirty: false, // Sync disabled
       updatedAt: Date.now(),
     });
   },

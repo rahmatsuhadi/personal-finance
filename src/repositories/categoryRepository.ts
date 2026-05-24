@@ -16,7 +16,7 @@ export const categoryRepository = {
       ...category,
       id: crypto.randomUUID(),
       updatedAt: Date.now(),
-      isDirty: true,
+      isDirty: false, // Sync disabled
       isDeleted: false,
     };
     await db.categories.add(newCat);
@@ -30,7 +30,7 @@ export const categoryRepository = {
     return db.categories.update(id, {
       ...changes,
       updatedAt: Date.now(),
-      isDirty: true,
+      isDirty: false, // Sync disabled
     });
   },
 
@@ -45,20 +45,20 @@ export const categoryRepository = {
         if (newIds.length === 0) {
           await db.budgets.update(b.id, {
             isDeleted: true,
-            isDirty: true,
+            isDirty: false, // Sync disabled
             updatedAt: Date.now(),
           });
         } else {
           await db.budgets.update(b.id, {
             categoryIds: newIds,
-            isDirty: true,
+            isDirty: false, // Sync disabled
             updatedAt: Date.now(),
           });
         }
       }
       await db.categories.update(id, {
         isDeleted: true,
-        isDirty: true,
+        isDirty: false, // Sync disabled
         updatedAt: Date.now(),
       });
     });
