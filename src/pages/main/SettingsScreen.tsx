@@ -5,7 +5,7 @@ import { WalletCard } from "@/components/molecules/WalletCard";
 import { WalletFormModal } from "@/components/molecules/WalletFormModal";
 import { ConfirmModal } from "@/components/atoms/ConfirmModal";
 import { BrutalButton } from "@/components/atoms/BrutalButton";
-import { User, LogOut, Wallet, Plus, Trash2, Pencil, Tags, Target, Download, Upload, Database } from "lucide-react";
+import { User, LogOut, Wallet, Plus, Trash2, Pencil, Tags, Target, Download, Upload} from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { db } from "@/db/db";
 import { exportDB, importDB } from "dexie-export-import";
