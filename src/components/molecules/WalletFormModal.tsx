@@ -4,6 +4,7 @@ import { BrutalInput } from "@/components/atoms/BrutalInput";
 import { cn, formatRupiah, parseCurrency } from "@/lib/utils";
 import { X } from "lucide-react";
 import type { Wallet } from "@/db/db";
+import { toast } from "sonner";
 
 // ─── Color Options ─────────────────────────────────────────────────────────────
 
