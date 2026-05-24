@@ -31,6 +31,7 @@ export function formatRupiah(raw: string | number): string {
   }).format(parseInt(digits));
 }
 
-export function parseCurrency(formatted: string): number {
-  return parseInt(formatted.replace(/\D/g, "") || "0");
+export function parseCurrency(formatted: string | number): number {
+  if (typeof formatted === "number") return formatted;
+  return parseInt(String(formatted).replace(/\D/g, "") || "0");
 }

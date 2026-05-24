@@ -93,7 +93,7 @@ async function handleCapture() {
     // AI sekarang mengembalikan properti 'success' di dalam JSON-nya.
     // Jika success === true, lempar data ke onResult.
     if (result.success) {
-      onResult(result); // result langsung berisi amount, description, dll.
+      onResult(result.data); // result langsung berisi amount, description, dll.
       toast.success("Nota berhasil dipindai!");
     } else {
       // Jika AI mengembalikan success: false, ambil pesan 'error' spesifik dari AI
@@ -197,10 +197,10 @@ async function handleCapture() {
           Posisikan Nota / Struk di dalam bingkai hijau
         </p>
 
-        <div className="flex items-center gap-10">
-          <button className="text-white/40 brutal-press">
+        <div className="flex items-center ">
+          {/* <button className="text-white/40 brutal-press">
             <Zap size={24} />
-          </button>
+          </button> */}
 
           <button
             onClick={handleCapture}
@@ -215,7 +215,6 @@ async function handleCapture() {
             </div>
           </button>
 
-          <div className="w-6" /> {/* Spacer */}
         </div>
       </div>
 

@@ -168,16 +168,36 @@ export function AddTransactionScreen() {
   // ── Scanner Logic ───────────────────────────────────────────────────────────
 
   function handleScanResult(data: any) {
-    setActiveType(data.type);
-    setAmount(data.amount);
+    // Normalize type (lowercase) and ensure it's one of valid types
+    const rawType = (data.type || "expense").toLowerCase();
+    const type = ["income", "expense", "transfer"].includes(rawType) 
+      ? rawType as TxType 
+      : "expense";
+
+    setActiveType(type);
+    
+    // Format numeric amount to IDR string (e.g., 1270000 -> "1.270.000")
+    if (data.amount) {
+      setAmount(formatRupiah(data.amount));
+    }
+    
     setDescription(data.description);
-    setCategoryValue(data.category);
-    setCategoryLabel(data.category);
-    setDate(data.date);
+    
+    // Use the category returned by AI
+    if (data.category) {
+      setCategoryValue(data.category);
+      setCategoryLabel(data.category);
+    }
+    
+    if (data.date) setDate(data.date);
 
     if (data.useItemDetails) {
       setUseItemDetails(true);
-      setItems(data.items);
+      // Format item prices to IDR string
+      setItems((data.items || []).map((item: any) => ({
+        name: item.name,
+        price: formatRupiah(item.price)
+      })));
     } else {
       setUseItemDetails(false);
       setItems([]);
@@ -301,7 +321,7 @@ export function AddTransactionScreen() {
     }
   }
 
-  const activeTab = TAB_CONFIG.find((t) => t.type === activeType)!;
+  const activeTab = TAB_CONFIG.find((t) => t.type === activeType) || TAB_CONFIG[1];
 
   return (
     <div
