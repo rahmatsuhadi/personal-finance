@@ -1,12 +1,14 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { useWallets } from "@/hooks/useWallets";
 import { WalletCard } from "@/components/molecules/WalletCard";
 import { WalletFormModal } from "@/components/molecules/WalletFormModal";
 import { ConfirmModal } from "@/components/atoms/ConfirmModal";
 import { BrutalButton } from "@/components/atoms/BrutalButton";
-import { User, LogOut, Wallet, Plus, Trash2, Pencil, Tags, Target } from "lucide-react";
+import { User, LogOut, Wallet, Plus, Trash2, Pencil, Tags, Target, Download, Upload, Database } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { db } from "@/db/db";
+import { exportDB, importDB } from "dexie-export-import";
 import type { Wallet as WalletType } from "@/db/db";
 import { toast } from "sonner";
 // import CloudSyncActionCard from "@/components/molecules/CloudSyncActionCard";
@@ -17,12 +19,17 @@ export function SettingsScreen() {
   const { user, logout, isCloudConnected } = useAuth();
   const { wallets, addWallet, updateWallet, removeWallet } = useWallets();
   const navigate = useNavigate();
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [addModalOpen, setAddModalOpen] = useState(false);
   const [editingWallet, setEditingWallet] = useState<WalletType | null>(null);
   // Confirm modals
   const [logoutConfirmOpen, setLogoutConfirmOpen] = useState(false);
   const [deletingWallet, setDeletingWallet] = useState<WalletType | null>(null);
+  const [importConfirmOpen, setImportConfirmOpen] = useState(false);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [isExporting, setIsExporting] = useState(false);
+  const [isImporting, setIsImporting] = useState(false);
 
   async function handleLogoutConfirm() {
     await logout();
@@ -43,6 +50,72 @@ export function SettingsScreen() {
     await updateWallet(editingWallet.id, data);
     setEditingWallet(null);
     toast.success("Dompet berhasil diperbarui!");
+  }
+
+  // ── Backup & Restore Logic ──────────────────────────────────────────────────
+
+  async function handleExport() {
+    try {
+      setIsExporting(true);
+      const blob = await exportDB(db, {
+        prettyJson: true,
+      });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      const date = new Date().toISOString().split("T")[0];
+      link.href = url;
+      link.download = `kantiarta-backup-${date}.json`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+      toast.success("Data berhasil diekspor!");
+    } catch (error) {
+      console.error("Export failed:", error);
+      toast.error("Gagal mengekspor data.");
+    } finally {
+      setIsExporting(false);
+    }
+  }
+
+  function onImportClick() {
+    fileInputRef.current?.click();
+  }
+
+  function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (file) {
+      setSelectedFile(file);
+      setImportConfirmOpen(true);
+    }
+    // Reset input value so same file can be selected again
+    e.target.value = "";
+  }
+
+  async function handleImportConfirm() {
+    if (!selectedFile) return;
+
+    try {
+      setIsImporting(true);
+      setImportConfirmOpen(false);
+
+      // Delete existing DB before import to avoid conflicts
+      await db.delete();
+      await importDB(selectedFile);
+      
+      toast.success("Data berhasil diimpor! Aplikasi akan dimuat ulang.");
+      
+      // Reload page to re-initialize DB state across hooks
+      setTimeout(() => {
+        window.location.reload();
+      }, 1500);
+    } catch (error) {
+      console.error("Import failed:", error);
+      toast.error("Gagal mengimpor data. Pastikan format file benar.");
+    } finally {
+      setIsImporting(false);
+      setSelectedFile(null);
+    }
   }
 
   return (
@@ -152,7 +225,10 @@ export function SettingsScreen() {
         </div>
 
         {/* ── Categories Management ─────────────────────────────────────────── */}
-        <div className="p-4 border-t-2 border-brutal-black space-y-3">
+        <div className="p-4 space-y-3">
+          <p className="text-xs font-bold uppercase tracking-wider opacity-60 mb-3">
+            Manajemen Data
+          </p>
           <button
             onClick={() => navigate("/settings/categories")}
             className="w-full border-2 border-brutal-black bg-brutal-white p-4 flex items-center justify-between brutal-press shadow-brutal-sm"
@@ -182,6 +258,45 @@ export function SettingsScreen() {
               </div>
             </div>
           </button>
+        </div>
+
+        {/* ── Backup & Restore Section ──────────────────────────────────────── */}
+        <div className="p-4 bg-brutal-bg">
+          <p className="text-xs font-bold uppercase tracking-wider opacity-60 mb-3">
+            Backup & Pemulihan
+          </p>
+          <div className="grid grid-cols-2 gap-3">
+            <button
+              onClick={handleExport}
+              disabled={isExporting}
+              className="border-2 border-brutal-black bg-brutal-lime p-4 flex flex-col items-center gap-2 brutal-press shadow-brutal-sm disabled:opacity-50"
+            >
+              <Download size={24} strokeWidth={2.5} />
+              <div className="text-center">
+                <p className="text-xs font-black uppercase">Ekspor Data</p>
+                <p className="text-[10px] opacity-70">Simpan ke JSON</p>
+              </div>
+            </button>
+
+            <button
+              onClick={onImportClick}
+              disabled={isImporting}
+              className="border-2 border-brutal-black bg-brutal-yellow p-4 flex flex-col items-center gap-2 brutal-press shadow-brutal-sm disabled:opacity-50"
+            >
+              <Upload size={24} strokeWidth={2.5} />
+              <div className="text-center">
+                <p className="text-xs font-black uppercase">Impor Data</p>
+                <p className="text-[10px] opacity-70">Muat dari file</p>
+              </div>
+            </button>
+          </div>
+          <input
+            type="file"
+            ref={fileInputRef}
+            onChange={handleFileChange}
+            accept=".json"
+            className="hidden"
+          />
         </div>
       </div>
 
@@ -216,7 +331,20 @@ export function SettingsScreen() {
         onCancel={() => setDeletingWallet(null)}
       />
 
-      {/* Restore Confirm */}
+      {/* Import Confirm */}
+      <ConfirmModal
+        open={importConfirmOpen}
+        title="Konfirmasi Impor"
+        message="Mengimpor data akan menghapus semua data lokal saat ini dan menggantinya dengan data dari file backup. Lanjutkan?"
+        confirmLabel="Ya, Impor"
+        cancelLabel="Batal"
+        variant="warning"
+        onConfirm={handleImportConfirm}
+        onCancel={() => {
+          setImportConfirmOpen(false);
+          setSelectedFile(null);
+        }}
+      />
 
       {/* Logout Confirm */}
       <ConfirmModal
