@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { BrutalButton } from "@/components/atoms/BrutalButton";
-import { Camera, X, Zap,  RefreshCw } from "lucide-react";
+import { Camera, X,   RefreshCw } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { CONFIG } from "@/config";
