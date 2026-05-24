@@ -81,14 +81,16 @@ export function ScannerOverlay({ onClose, onResult, localCategories }: ScannerOv
       // Prepare FormData
       const formData = new FormData();
       formData.append("image", blob, "receipt.jpg");
-      formData.append("local_categories", localCategories);
+      
+      // Send as JSON array string to match backend JSON.parse logic
+      const categoriesArray = localCategories.split(",").filter(c => c.trim() !== "");
+      formData.append("local_categories", JSON.stringify(categoriesArray));
 
       // Call Real Backend API
       const response = await fetch(CONFIG.API_URL + "/api/ai/scan", {
         method: "POST",
         body: formData,
         credentials: "include",
-        headers: { "Content-Type": "application/json" },
       });
 
       if (!response.ok) {
@@ -96,8 +98,13 @@ export function ScannerOverlay({ onClose, onResult, localCategories }: ScannerOv
       }
 
       const result = await response.json();
-      onResult(result);
-      toast.success("Nota berhasil dipindai!");
+      
+      if (result.success && result.data) {
+        onResult(result.data);
+        toast.success("Nota berhasil dipindai!");
+      } else {
+        throw new Error(result.error || "Gagal menganalisis nota.");
+      }
     } catch (err) {
       console.error("Scanning error:", err);
       toast.error("Gagal menganalisis nota. Coba lagi.");
