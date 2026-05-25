@@ -71,6 +71,9 @@ export function useAddTransactionForm() {
           setWalletHint(`Saldo: ${formatIDR(matched.balance)}`);
         }
       }
+      
+      // Bersihkan state history agar tidak mengisi ulang form saat reset/submit
+      window.history.replaceState(null, "");
     }
   }, [location.state, wallets]);
 
@@ -96,13 +99,36 @@ export function useAddTransactionForm() {
     ).subscribe({
       next: (data) => {
         setCategories(data);
-        setCategoryValue("");
-        setCategoryLabel("");
+        
+        const initialTx = location.state?.initialTx;
+        let matchedName = "";
+        if (initialTx && initialTx.category) {
+          const matched = data.find(
+            c => c.name.toLowerCase() === initialTx.category.toLowerCase()
+          );
+          if (matched) {
+            matchedName = matched.name;
+          }
+        }
+
+        if (matchedName) {
+          setCategoryValue(matchedName);
+          setCategoryLabel(matchedName);
+        } else {
+          setCategoryValue(current => {
+            const exists = data.some(c => c.name === current);
+            return exists ? current : "";
+          });
+          setCategoryLabel(current => {
+            const exists = data.some(c => c.name === current);
+            return exists ? current : "";
+          });
+        }
       },
       error: () => { },
     });
     return () => sub.unsubscribe();
-  }, [activeType]);
+  }, [activeType, location.state]);
 
   const handleTypeChange = (type: TxType) => {
     setActiveType(type);

@@ -22,7 +22,7 @@ export function AIChatbotScreen() {
   const chat = useChatHistory();
 
   const handleEdit = (tx: any) => {
-    navigate("/transactions/add", { state: { initialTx: tx } });
+    navigate("/add", { state: { initialTx: tx } });
   };
 
   return (
@@ -72,9 +72,9 @@ export function AIChatbotScreen() {
       )}
 
       {/* Input Bar */}
-      <ChatInputBar 
-        onSend={chat.sendMessage} 
-        disabled={chat.isTyping} 
+      <ChatInputBar
+        onSend={chat.sendMessage}
+        disabled={chat.isTyping}
       />
     </div>
   );
