@@ -17,9 +17,9 @@ Berikut adalah beberapa tangkapan layar dari aplikasi Kanti Arta:
 
 <p align="center">
   <!-- Ganti path gambar di bawah dengan screenshot aplikasi Anda -->
-  <img src="./docs/assets/screenshot-dashboard.png" alt="Dashboard Screen" width="280px" style="border: 3px solid #000; box-shadow: 5px 5px 0px #000; margin: 10px;" />
-  <img src="./docs/assets/screenshot-chat.png" alt="AI Chat Screen" width="280px" style="border: 3px solid #000; box-shadow: 5px 5px 0px #000; margin: 10px;" />
-  <img src="./docs/assets/screenshot-onboarding.png" alt="On Boarding Screen" width="280px" style="border: 3px solid #000; box-shadow: 5px 5px 0px #000; margin: 10px;" />
+  <img src="./docs/assets/screenshot-dashboard.png" alt="Dashboard Screen" width="200px" style="border: 3px solid #000; box-shadow: 5px 5px 0px #000; margin: 10px;" />
+  <img src="./docs/assets/screenshot-chat.png" alt="AI Chat Screen" width="200px" style="border: 3px solid #000; box-shadow: 5px 5px 0px #000; margin: 10px;" />
+  <img src="./docs/assets/screenshot-onboarding.png" alt="On Boarding Screen" width="200px" style="border: 3px solid #000; box-shadow: 5px 5px 0px #000; margin: 10px;" />
 </p>
 
 ---
