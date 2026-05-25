@@ -35,7 +35,7 @@ export function groupTransactionsByDate(
 // ─── Balance helpers ──────────────────────────────────────────────────────────
 
 /** Apply balance changes for a transaction being ADDED */
-async function applyBalanceAdd(tx: Omit<Transaction, "id" | "serverId" | "updatedAt" | "isDirty" | "isDeleted">) {
+async function applyBalanceAdd(tx: Omit<Transaction, "id" | "updatedAt">) {
   if (tx.type === "income" && tx.walletId) {
     const w = await db.wallets.get(tx.walletId);
     if (w) await db.wallets.update(tx.walletId, { balance: (w.balance ?? 0) + tx.amount });
@@ -100,7 +100,6 @@ export function useTransactions(
       const results = await db.transactions
         .where("date")
         .between(fromDate, toDate, true, true)
-        .filter(t => !t.isDeleted)
         .reverse()
         .toArray();
 
@@ -118,7 +117,7 @@ export function useTransactions(
   const grouped = groupTransactionsByDate(transactions);
 
   // ── Add ────────────────────────────────────────────────────────────────────
-  const addTransaction = useCallback(async (tx: Omit<Transaction, "id" | "serverId" | "updatedAt" | "isDirty" | "isDeleted">) => {
+  const addTransaction = useCallback(async (tx: Omit<Transaction, "id" | "updatedAt">) => {
     const id = await transactionRepository.add(tx);
     await applyBalanceAdd(tx);
     return id;
@@ -127,7 +126,7 @@ export function useTransactions(
   // ── Update ─────────────────────────────────────────────────────────────────
   // Strategy: reverse old balance, apply new balance, then update record
   const updateTransaction = useCallback(
-    async (id: string, newData: Omit<Transaction, "id" | "serverId" | "updatedAt" | "isDirty" | "isDeleted">) => {
+    async (id: string, newData: Omit<Transaction, "id" | "updatedAt">) => {
       const old = await db.transactions.get(id);
       if (old) {
         // 1. Reverse old balance effect
@@ -167,7 +166,7 @@ export function useAllTransactions() {
 
   useEffect(() => {
     const sub = liveQuery(() =>
-      db.transactions.filter(t => !t.isDeleted).toArray()
+      db.transactions.toArray()
         .then(txs => txs.sort((a, b) => b.date.localeCompare(a.date)))
     ).subscribe({
       next: (data) => setTransactions(data),

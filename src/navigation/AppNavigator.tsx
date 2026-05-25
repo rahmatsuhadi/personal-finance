@@ -2,18 +2,18 @@ import { useAuth } from "@/hooks/useAuth";
 import { Routes, Route, Navigate } from "react-router-dom";
 import { OnboardingScreen } from "@/pages/auth/OnboardingScreen";
 import { TabNavigator } from "@/navigation/TabNavigator";
-import { HomeScreen } from "@/pages/main/HomeScreen";
-import { CalendarScreen } from "@/pages/main/CalendarScreen";
-import { AddTransactionScreen } from "@/pages/main/AddTransactionScreen";
-import { StatisticsScreen } from "@/pages/main/StatisticsScreen";
-import { SettingsScreen } from "@/pages/main/SettingsScreen";
-import { TransactionDetailScreen } from "@/pages/main/TransactionDetailScreen";
-import { EditTransactionScreen } from "@/pages/main/EditTransactionScreen";
-import { AIChatbotScreen } from "@/pages/main/AIChatbotScreen";
-import { CategoryListScreen } from "@/pages/settings/CategoryListScreen";
-import { BudgetSetupScreen } from "@/pages/settings/BudgetSetupScreen";
-import { BudgetFormScreen } from "@/pages/settings/BudgetFormScreen";
-import { BudgetDetailScreen } from "@/pages/main/BudgetDetailScreen";
+import { HomeScreen } from "@/pages/home/HomeScreen";
+import { CalendarScreen } from "@/pages/calendar/CalendarScreen";
+import { AddTransactionScreen } from "@/pages/transactions/AddTransactionScreen";
+import { StatisticsScreen } from "@/pages/statistics/StatisticsScreen";
+import { SettingsScreen } from "@/pages/settings/SettingsScreen";
+import { TransactionDetailScreen } from "@/pages/transactions/TransactionDetailScreen";
+import { EditTransactionScreen } from "@/pages/transactions/EditTransactionScreen";
+import { AIChatbotScreen } from "@/pages/ai-chat/AIChatbotScreen";
+import { CategoryListScreen } from "@/pages/categories/CategoryListScreen";
+import { BudgetSetupScreen } from "@/pages/budgets/BudgetSetupScreen";
+import { BudgetFormScreen } from "@/pages/budgets/BudgetFormScreen";
+import { BudgetDetailScreen } from "@/pages/budgets/BudgetDetailScreen";
 
 // ─── AppNavigator ─────────────────────────────────────────────────────────────
 // Root conditional router — checks user profile in DB to decide which flow to show.

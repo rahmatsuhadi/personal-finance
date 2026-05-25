@@ -22,7 +22,7 @@ export function useWallets() {
   useEffect(() => {
     const sub = liveQuery(() =>
       db.transactions
-        .filter(t => t.type === "income" && !t.isDeleted)
+        .filter(t => t.type === "income")
         .toArray()
         .then((txs) => txs.reduce((sum, t) => sum + t.amount, 0))
     ).subscribe({
@@ -35,7 +35,7 @@ export function useWallets() {
   useEffect(() => {
     const sub = liveQuery(() =>
       db.transactions
-        .filter(t => t.type === "expense" && !t.isDeleted)
+        .filter(t => t.type === "expense")
         .toArray()
         .then((txs) => txs.reduce((sum, t) => sum + t.amount, 0))
     ).subscribe({
@@ -47,7 +47,7 @@ export function useWallets() {
 
   const totalBalance = wallets.reduce((sum, w) => sum + (w.balance ?? 0), 0);
 
-  const addWallet = useCallback(async (wallet: Omit<Wallet, "id" | "serverId" | "updatedAt" | "isDirty" | "isDeleted">) => {
+  const addWallet = useCallback(async (wallet: Omit<Wallet, "id" | "updatedAt">) => {
     await walletRepository.add(wallet);
   }, []);
 

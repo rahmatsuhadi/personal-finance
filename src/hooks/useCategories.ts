@@ -17,7 +17,7 @@ export function useCategories() {
   const incomeCategories = categories.filter((c) => c.type === "income");
   const expenseCategories = categories.filter((c) => c.type === "expense");
 
-  const addCategory = useCallback(async (category: Omit<Category, "id" | "serverId" | "updatedAt" | "isDirty" | "isDeleted">) => {
+  const addCategory = useCallback(async (category: Omit<Category, "id" | "updatedAt">) => {
     await categoryRepository.add(category);
   }, []);
 

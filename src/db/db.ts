@@ -1,12 +1,9 @@
 import Dexie, { type EntityTable } from "dexie";
 
-// ─── Sync Metadata ────────────────────────────────────────────────────────────
+// ─── Base Entity ──────────────────────────────────────────────────────────────
 
-export interface SyncMeta {
-  serverId?: string;   // ID dari server (setelah sync berhasil)
-  updatedAt: number;   // Unix timestamp ms (Last-Write-Wins)
-  isDirty: boolean;    // Apakah ada perubahan lokal yang belum di-sync
-  isDeleted: boolean;  // Soft delete flag
+export interface BaseEntity {
+  updatedAt: number;   // Unix timestamp ms
 }
 
 // ─── Type Definitions ────────────────────────────────────────────────────────
@@ -16,7 +13,7 @@ export interface UserProfile {
   name: string;
 }
 
-export interface Wallet extends SyncMeta {
+export interface Wallet extends BaseEntity {
   id: string;  // UUID string
   name: string;
   currency: "IDR" | "USD";
@@ -29,7 +26,7 @@ export interface TransactionItem {
   price: number;
 }
 
-export interface Transaction extends SyncMeta {
+export interface Transaction extends BaseEntity {
   id: string;  // UUID string
   type: "income" | "expense" | "transfer";
   date: string; // ISO date string YYYY-MM-DD
@@ -44,7 +41,7 @@ export interface Transaction extends SyncMeta {
   items?: TransactionItem[];
 }
 
-export interface Category extends SyncMeta {
+export interface Category extends BaseEntity {
   id: string;  // UUID string
   name: string;
   type: "income" | "expense";
@@ -52,7 +49,7 @@ export interface Category extends SyncMeta {
   colorClass?: string;
 }
 
-export interface Budget extends SyncMeta {
+export interface Budget extends BaseEntity {
   id: string;  // UUID string
   name: string;
   categoryIds: string[];
@@ -180,10 +177,37 @@ class BrutalistFinanceDB extends Dexie {
           categoryIds: (b.categoryIds ?? []).map((cId: number) => categoryIdMap.get(cId) ?? String(cId)),
           serverId: undefined,
           updatedAt: now,
-          isDirty: true,
-          isDeleted: false,
         });
       }
+    });
+
+    // ── v7: Remove sync metadata fields ──────────────────────────────────────
+    this.version(7).stores({
+      wallets: "id, name, currency, updatedAt",
+      transactions: "id, type, date, amount, category, walletId, updatedAt",
+      categories: "id, name, type, updatedAt",
+      budgets: "id, name, *categoryIds, updatedAt",
+    }).upgrade(async tx => {
+      await tx.table("wallets").toCollection().modify((w: any) => {
+        delete w.serverId;
+        delete w.isDirty;
+        delete w.isDeleted;
+      });
+      await tx.table("categories").toCollection().modify((c: any) => {
+        delete c.serverId;
+        delete c.isDirty;
+        delete c.isDeleted;
+      });
+      await tx.table("transactions").toCollection().modify((t: any) => {
+        delete t.serverId;
+        delete t.isDirty;
+        delete t.isDeleted;
+      });
+      await tx.table("budgets").toCollection().modify((b: any) => {
+        delete b.serverId;
+        delete b.isDirty;
+        delete b.isDeleted;
+      });
     });
   }
 }
@@ -195,7 +219,7 @@ export const db = new BrutalistFinanceDB();
 
 let _seeded = false;
 
-export const DEFAULT_CATEGORIES: Omit<Category, "id" | "serverId" | "updatedAt" | "isDirty" | "isDeleted"> [] = [
+export const DEFAULT_CATEGORIES: Omit<Category, "id" | "updatedAt"> [] = [
   { name: "Gaji", type: "income", icon: "Banknote", colorClass: "brutal-emerald" },
   { name: "Bisnis", type: "income", icon: "Briefcase", colorClass: "brutal-blue" },
   { name: "Investasi", type: "income", icon: "TrendingUp", colorClass: "brutal-purple" },
@@ -211,13 +235,13 @@ export const DEFAULT_CATEGORIES: Omit<Category, "id" | "serverId" | "updatedAt" 
   { name: "Lainnya (Pengeluaran)", type: "expense", icon: "MinusCircle", colorClass: "brutal-black" },
 ];
 
-export async function seedDefaultData(forceDirty = false) {
+export async function seedDefaultData() {
   if (_seeded) return;
   _seeded = true;
 
   const now = Date.now();
 
-  // ── Check if the DB is truly empty (including deleted records) ──
+  // ── Check if the DB is truly empty ──
   const [catCount, walletCount, txCount] = await Promise.all([
     db.categories.count(),
     db.wallets.count(),
@@ -229,7 +253,7 @@ export async function seedDefaultData(forceDirty = false) {
   if (!isEmpty) {
     console.log("[Seed] Database not empty, skipping seeding.");
     // Even if not empty, we can still fix missing icons/colors for existing categories
-    const existingCats = await db.categories.filter(c => !c.isDeleted).toArray();
+    const existingCats = await db.categories.toArray();
     for (const c of existingCats) {
       if (!c.icon || c.icon === "Tag") {
         const def = DEFAULT_CATEGORIES.find(d => d.name === c.name && d.type === c.type);
@@ -249,8 +273,6 @@ export async function seedDefaultData(forceDirty = false) {
       ...c,
       id: crypto.randomUUID(),
       updatedAt: now,
-      isDirty: forceDirty,
-      isDeleted: false,
     }))
   );
 
@@ -263,8 +285,6 @@ export async function seedDefaultData(forceDirty = false) {
       colorClass: "brutal-lime", 
       balance: 0, 
       updatedAt: now, 
-      isDirty: forceDirty, 
-      isDeleted: false 
     },
   ]);
 }

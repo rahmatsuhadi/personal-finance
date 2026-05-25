@@ -51,14 +51,6 @@ export function useSync(isAuthenticated: boolean) {
       const result = await res.json();
       if (!result.success) throw new Error("[Backup] Failed on server");
 
-      // Mark everything as clean after successful backup
-      await Promise.all([
-        db.transactions.where("isDirty").equals(1).modify({ isDirty: false }),
-        db.wallets.where("isDirty").equals(1).modify({ isDirty: false }),
-        db.categories.where("isDirty").equals(1).modify({ isDirty: false }),
-        db.budgets.where("isDirty").equals(1).modify({ isDirty: false }),
-      ]);
-
       const now = Date.now();
       localStorage.setItem(LAST_SYNC_KEY, String(now));
       setLastSyncAt(now);
@@ -100,10 +92,14 @@ export function useSync(isAuthenticated: boolean) {
 
       // Overwrite local data with server data
       await db.transaction("rw", [db.wallets, db.transactions, db.categories, db.budgets], async () => {
-        if (categories.length > 0) await db.categories.bulkPut(categories.map((c: any) => ({ ...c, isDirty: false })));
-        if (wallets.length > 0) await db.wallets.bulkPut(wallets.map((w: any) => ({ ...w, isDirty: false })));
-        if (transactions.length > 0) await db.transactions.bulkPut(transactions.map((t: any) => ({ ...t, isDirty: false })));
-        if (budgets.length > 0) await db.budgets.bulkPut(budgets.map((b: any) => ({ ...b, isDirty: false })));
+        const clean = (item: any) => {
+          const { serverId, isDirty, isDeleted, ...rest } = item;
+          return rest;
+        };
+        if (categories.length > 0) await db.categories.bulkPut(categories.map(clean));
+        if (wallets.length > 0) await db.wallets.bulkPut(wallets.map(clean));
+        if (transactions.length > 0) await db.transactions.bulkPut(transactions.map(clean));
+        if (budgets.length > 0) await db.budgets.bulkPut(budgets.map(clean));
       });
 
       const now = Date.now();
