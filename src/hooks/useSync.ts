@@ -1,11 +1,11 @@
 import { useState, useCallback, useRef } from "react";
 import { db } from "@/db/db";
 import { CONFIG } from "@/config";
+import { apiClient } from "@/lib/apiClient";
 
 export type SyncStatus = "idle" | "syncing" | "success" | "error" | "offline";
 
 const LAST_SYNC_KEY = "kanti_last_sync_ts";
-const baseURL = CONFIG.API_URL;
 
 export function useSync(isAuthenticated: boolean) {
   const [status, setStatus] = useState<SyncStatus>("idle");
@@ -38,17 +38,10 @@ export function useSync(isAuthenticated: boolean) {
         db.budgets.toArray(),
       ]);
 
-      const res = await fetch(`${baseURL}/api/sync/backup`, {
-        method: "POST",
-        credentials: "include",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          changes: { wallets, transactions: txs, categories: cats, budgets }
-        }),
+      const result = await apiClient.post(CONFIG.ENDPOINTS.SYNC_BACKUP, {
+        changes: { wallets, transactions: txs, categories: cats, budgets }
       });
 
-      if (!res.ok) throw new Error(`[Backup] Server error: ${res.status}`);
-      const result = await res.json();
       if (!result.success) throw new Error("[Backup] Failed on server");
 
       const now = Date.now();
@@ -79,13 +72,8 @@ export function useSync(isAuthenticated: boolean) {
     setStatus("syncing");
 
     try {
-      const res = await fetch(`${baseURL}/api/sync/restore`, {
-        method: "GET",
-        credentials: "include",
-      });
+      const result = await apiClient.get(CONFIG.ENDPOINTS.SYNC_RESTORE);
 
-      if (!res.ok) throw new Error(`[Restore] Server error: ${res.status}`);
-      const result = await res.json();
       if (!result.success) throw new Error("[Restore] Failed on server");
 
       const { wallets, transactions, categories, budgets } = result.data;

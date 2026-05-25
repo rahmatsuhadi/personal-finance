@@ -4,6 +4,7 @@ import { Camera, X,   RefreshCw } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { CONFIG } from "@/config";
+import { apiClient } from "@/lib/apiClient";
 
 interface ScannerOverlayProps {
   onClose: () => void;
@@ -80,14 +81,7 @@ async function handleCapture() {
     const categoriesArray = localCategories.split(",").map(c => c.trim()).filter(Boolean);
     formData.append("local_categories", JSON.stringify(categoriesArray));
 
-    const response = await fetch(CONFIG.API_URL + "/api/ai/scan", {
-      method: "POST",
-      body: formData,
-      credentials: "include",
-    });
-
-
-    const result = await response.json();
+    const result = await apiClient.post(CONFIG.ENDPOINTS.AI_SCAN, formData);
     
     // PERUBAHAN DI SINI:
     // AI sekarang mengembalikan properti 'success' di dalam JSON-nya.
