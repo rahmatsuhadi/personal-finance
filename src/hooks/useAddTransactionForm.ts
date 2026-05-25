@@ -4,14 +4,16 @@ import { liveQuery } from "dexie";
 import { db, type Category } from "@/db/db";
 import { useWallets } from "@/hooks/useWallets";
 import { useTransactions } from "@/hooks/useTransactions";
-import { parseCurrency, formatRupiah } from "@/lib/utils";
+import { parseCurrency, formatRupiah, formatIDR } from "@/lib/utils";
 import { toast } from "sonner";
+import { useLocation } from "react-router-dom";
 
 export type TxType = "income" | "expense" | "transfer";
 
 export function useAddTransactionForm() {
   const { wallets } = useWallets();
   const { addTransaction } = useTransactions();
+  const location = useLocation();
 
   const [activeType, setActiveType] = useState<TxType>("expense");
   const [categories, setCategories] = useState<Category[]>([]);
@@ -45,6 +47,32 @@ export function useAddTransactionForm() {
 
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isLoading, setIsLoading] = useState(false);
+
+  // ── Initial State from Router ────────────────────────────────────────────
+  useEffect(() => {
+    if (location.state && location.state.initialTx && wallets.length > 0) {
+      const initialTx = location.state.initialTx;
+      const type = initialTx.type || "expense";
+      setActiveType(type);
+      if (initialTx.amount) setAmount(formatRupiah(String(initialTx.amount)));
+      if (initialTx.description) setDescription(initialTx.description);
+      if (initialTx.category) {
+        setCategoryValue(initialTx.category);
+        setCategoryLabel(initialTx.category);
+      }
+      if (initialTx.date) setDate(initialTx.date);
+      
+      if (initialTx.walletName) {
+        const matched = wallets.find(w => w.name.toLowerCase() === initialTx.walletName.toLowerCase());
+        if (matched) {
+          setWalletId(matched.id);
+          setWalletLabel(matched.name);
+          setWalletColor(matched.colorClass);
+          setWalletHint(`Saldo: ${formatIDR(matched.balance)}`);
+        }
+      }
+    }
+  }, [location.state, wallets]);
 
   // ── Auto Calculate Amount ────────────────────────────────────────────────
   useEffect(() => {

@@ -35,7 +35,7 @@ export function groupTransactionsByDate(
 // ─── Balance helpers ──────────────────────────────────────────────────────────
 
 /** Apply balance changes for a transaction being ADDED */
-async function applyBalanceAdd(tx: Omit<Transaction, "id" | "updatedAt">) {
+export async function applyBalanceAdd(tx: Omit<Transaction, "id" | "updatedAt">) {
   if (tx.type === "income" && tx.walletId) {
     const w = await db.wallets.get(tx.walletId);
     if (w) await db.wallets.update(tx.walletId, { balance: (w.balance ?? 0) + tx.amount });
