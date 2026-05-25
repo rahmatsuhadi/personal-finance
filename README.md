@@ -13,7 +13,7 @@
 
 ## Tampilan Aplikasi (Screenshots)
 
-<p align="right">
+<p align="left">
   <!-- Ganti path gambar di bawah dengan screenshot aplikasi Anda -->
   <img src="./docs/assets/screenshot-dashboard.png" alt="Dashboard Screen" width="200px" style="border: 3px solid #000; box-shadow: 5px 5px 0px #000; margin: 10px;" />
 </p>
