@@ -111,14 +111,14 @@ async function handleCapture() {
     <div className="fixed inset-0 z-[100] bg-brutal-black flex flex-col overflow-hidden">
       <canvas ref={canvasRef} className="hidden" />
       {/* ── Top Bar ── */}
-      <div className="flex items-center justify-between px-4 py-4 z-10 bg-gradient-to-b from-brutal-black to-transparent">
+      <div className="flex items-center justify-between px-6 py-4 z-10 bg-brutal-black border-b-4 border-white">
+        <span className="text-white font-black uppercase tracking-wider text-sm">Pindai Nota Struk</span>
         <button
           onClick={onClose}
           className="h-10 w-10 flex items-center justify-center border-2 border-white bg-brutal-black text-white brutal-press shadow-[2px_2px_0px_#fff]"
         >
           <X size={20} strokeWidth={2.5} />
         </button>
-
       </div>
 
       {/* ── Camera Viewfinder ── */}
@@ -152,17 +152,12 @@ async function handleCapture() {
 
             {/* Guide Frame */}
             <div className="absolute inset-0 flex items-center justify-center pointer-events-none p-10">
-              <div className="w-full aspect-[3/4] border-2 border-brutal-lime relative">
+              <div className="w-full aspect-[3/4] border-4 border-brutal-lime relative shadow-[0_0_20px_rgba(200,241,53,0.2)]">
                 {/* Corners */}
-                <div className="absolute -top-2 -left-2 w-8 h-8 border-t-4 border-l-4 border-brutal-lime" />
-                <div className="absolute -top-2 -right-2 w-8 h-8 border-t-4 border-r-4 border-brutal-lime" />
-                <div className="absolute -bottom-2 -left-2 w-8 h-8 border-b-4 border-l-4 border-brutal-lime" />
-                <div className="absolute -bottom-2 -right-2 w-8 h-8 border-b-4 border-r-4 border-brutal-lime" />
-
-                {/* Scanline Animation */}
-                <div className="absolute inset-0 overflow-hidden">
-                  <div className="w-full h-1 bg-brutal-lime/50 shadow-[0_0_15px_#c8f135] animate-[scan_3s_infinite_linear]" />
-                </div>
+                <div className="absolute -top-3 -left-3 w-6 h-6 border-t-4 border-l-4 border-white" />
+                <div className="absolute -top-3 -right-3 w-6 h-6 border-t-4 border-r-4 border-white" />
+                <div className="absolute -bottom-3 -left-3 w-6 h-6 border-b-4 border-l-4 border-white" />
+                <div className="absolute -bottom-3 -right-3 w-6 h-6 border-b-4 border-r-4 border-white" />
               </div>
             </div>
 
@@ -172,9 +167,9 @@ async function handleCapture() {
               isCapturing ? "opacity-100" : "opacity-0"
             )} />
 
-            {/* Processing Overlay */}
+            {/* Processing Overlay (Solid Black - No Video Bleeding) */}
             {isProcessing && (
-              <div className="absolute inset-0 bg-brutal-black/70 backdrop-blur-sm flex flex-col items-center justify-center z-20">
+              <div className="absolute inset-0 bg-black flex flex-col items-center justify-center z-20">
                 <RefreshCw size={48} className="text-brutal-lime animate-spin mb-4" strokeWidth={3} />
                 <p className="text-white font-black uppercase tracking-[0.2em] text-sm animate-pulse">
                   Menganalisis...
@@ -186,38 +181,26 @@ async function handleCapture() {
       </div>
 
       {/* ── Bottom Bar ── */}
-      <div className="px-6 py-10 bg-brutal-black flex flex-col items-center gap-6">
-        <p className="text-white/60 text-[10px] font-bold uppercase tracking-widest text-center">
-          Posisikan Nota / Struk di dalam bingkai hijau
+      <div className="px-6 py-8 bg-brutal-black border-t-4 border-white flex flex-col items-center gap-6">
+        <p className="text-white/80 text-xs font-black uppercase tracking-widest text-center">
+          Posisikan Nota / Struk di dalam bingkai
         </p>
 
-        <div className="flex items-center ">
-          {/* <button className="text-white/40 brutal-press">
-            <Zap size={24} />
-          </button> */}
-
+        <div className="flex items-center">
           <button
             onClick={handleCapture}
             disabled={isProcessing || hasError}
             className={cn(
               "h-20 w-20 rounded-full border-4 border-white flex items-center justify-center p-1",
-              "transition-transform active:scale-90 disabled:opacity-50"
+              "transition-transform active:scale-95 disabled:opacity-50"
             )}
           >
-            <div className="w-full h-full rounded-full bg-brutal-lime border-4 border-brutal-black flex items-center justify-center shadow-[4px_4px_0px_#000]">
-              <Camera size={32} strokeWidth={2.5} />
+            <div className="w-full h-full rounded-full bg-brutal-lime border-4 border-brutal-black flex items-center justify-center shadow-[4px_4px_0px_#fff]">
+              <Camera size={32} strokeWidth={2.5} className="text-brutal-black" />
             </div>
           </button>
-
         </div>
       </div>
-
-      <style>{`
-        @keyframes scan {
-          0% { transform: translateY(0); }
-          100% { transform: translateY(1000%); }
-        }
-      `}</style>
     </div>
   );
 }

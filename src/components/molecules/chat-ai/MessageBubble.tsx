@@ -1,10 +1,17 @@
-import type { Message } from "@/types";
+import type { Message, ParsedTransaction } from "@/types";
 import { Bot } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { TxConfirmCard } from "./TxConfirmCard";
 
-export default function MessageBubble({ msg }: { msg: Message }) {
+interface MessageBubbleProps {
+  msg: Message;
+  onConfirm?: (id: string) => void;
+  onCancel?: (id: string) => void;
+  onEdit?: (tx: ParsedTransaction) => void;
+}
+
+export default function MessageBubble({ msg, onConfirm, onCancel, onEdit }: MessageBubbleProps) {
   const isUser = msg.role === "user";
 
   const renderContent = (content: string) => {
@@ -19,8 +26,6 @@ export default function MessageBubble({ msg }: { msg: Message }) {
       );
     });
   };
-
-  
 
   return (
     <div
@@ -52,10 +57,9 @@ export default function MessageBubble({ msg }: { msg: Message }) {
           <TxConfirmCard
             tx={msg.metadata.data}
             isApproved={msg.metadata.isApproved}
-            onCancel={() => {}}
-            onConfirm={() =>{}}
-            // onConfirm={() => handleConfirmTransaction(msg.id, msg.metadata!.data)}
-            // onCancel={() => handleCancelTransaction(msg.id)}
+            onCancel={() => onCancel?.(msg.id)}
+            onConfirm={() => onConfirm?.(msg.id)}
+            onEdit={() => onEdit?.(msg.metadata!.data)}
           />
         )}
 

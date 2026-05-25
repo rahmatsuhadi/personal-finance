@@ -1,15 +1,16 @@
 
 import type { ParsedTransaction } from "@/types";
-import { Check, X, Wallet, Tag } from "lucide-react";
+import { Check, X, Wallet, Tag, Edit3 } from "lucide-react";
 
 interface TxConfirmCardProps {
   tx: ParsedTransaction;
   isApproved?: boolean;
   onConfirm: () => void;
   onCancel: () => void;
+  onEdit: () => void;
 }
 
-export function TxConfirmCard({ tx, isApproved, onConfirm, onCancel }: TxConfirmCardProps) {
+export function TxConfirmCard({ tx, isApproved, onConfirm, onCancel, onEdit }: TxConfirmCardProps) {
   const formatIDR = (n: number) =>
     new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", minimumFractionDigits: 0 }).format(n);
 
@@ -39,16 +40,24 @@ export function TxConfirmCard({ tx, isApproved, onConfirm, onCancel }: TxConfirm
           <Check size={14} strokeWidth={3} /> TRANSAKSI BERHASIL DICATAT
         </div>
       ) : (
-        <div className="flex gap-2">
-          <button
-            onClick={onCancel}
-            className="flex-1 flex items-center justify-center gap-1 border-2 border-brutal-black bg-brutal-rose py-2 text-xs font-black text-white shadow-brutal-xs brutal-press"
-          >
-            <X size={14} strokeWidth={3} /> Batal
-          </button>
+        <div className="flex flex-col gap-2">
+          <div className="flex gap-2">
+            <button
+              onClick={onCancel}
+              className="flex-1 flex items-center justify-center gap-1 border-2 border-brutal-black bg-brutal-rose py-2 text-xs font-black text-white shadow-brutal-xs brutal-press"
+            >
+              <X size={14} strokeWidth={3} /> Batal
+            </button>
+            <button
+              onClick={onEdit}
+              className="flex-1 flex items-center justify-center gap-1 border-2 border-brutal-black bg-brutal-cyan py-2 text-xs font-black text-brutal-black shadow-brutal-xs brutal-press"
+            >
+              <Edit3 size={14} strokeWidth={3} /> Edit
+            </button>
+          </div>
           <button
             onClick={onConfirm}
-            className="flex-1 flex items-center justify-center gap-1 border-2 border-brutal-black bg-brutal-lime py-2 text-xs font-black text-brutal-black shadow-brutal-xs brutal-press"
+            className="w-full flex items-center justify-center gap-1 border-2 border-brutal-black bg-brutal-lime py-2.5 text-xs font-black text-brutal-black shadow-brutal-xs brutal-press"
           >
             <Check size={14} strokeWidth={3} /> Setuju
           </button>

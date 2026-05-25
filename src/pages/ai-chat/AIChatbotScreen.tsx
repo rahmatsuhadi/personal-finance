@@ -21,6 +21,10 @@ export function AIChatbotScreen() {
   const navigate = useNavigate();
   const chat = useChatHistory();
 
+  const handleEdit = (tx: any) => {
+    navigate("/transactions/add", { state: { initialTx: tx } });
+  };
+
   return (
     <div
       className="flex flex-col h-dvh bg-brutal-bg"
@@ -35,7 +39,13 @@ export function AIChatbotScreen() {
       {/* Messages */}
       <div className="flex-1 overflow-y-auto py-4 space-y-4">
         {chat.messages.map((msg) => (
-          <MessageBubble key={msg.id} msg={msg} />
+          <MessageBubble
+            key={msg.id}
+            msg={msg}
+            onConfirm={chat.confirmTransaction}
+            onCancel={chat.cancelTransaction}
+            onEdit={handleEdit}
+          />
         ))}
 
         {chat.isTyping && <TypingIndicator />}

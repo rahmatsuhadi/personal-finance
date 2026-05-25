@@ -18,6 +18,7 @@ export interface ParsedTransaction {
   walletName: string;
   type: "expense" | "income";
   date: string; // YYYY-MM-DD
+  category?: string;
 }
 
 
