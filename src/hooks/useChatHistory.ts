@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import type { Message } from "@/types";
-import { generateAiResponseExtended } from "@/lib/aiEngineWrapper";
+import { generateAiResponseStream } from "@/lib/aiEngineWrapper";
 import { dispatchIntent } from "@/lib/ai/intentDispatcher";
 
 function mkId(): string {
@@ -24,100 +24,142 @@ export function useChatHistory() {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, isTyping]);
 
-  const sendMessage = useCallback(async (text: string) => {
-    if (!text.trim() || isTyping) return;
+  const sendMessage = useCallback(
+    async (text: string) => {
+      if (!text.trim() || isTyping) return;
 
-    const userMsg: Message = {
-      id: mkId(),
-      role: "user",
-      content: text.trim(),
-      timestamp: new Date(),
-    };
-
-    setMessages((prev) => [...prev, userMsg]);
-    setIsTyping(true);
-
-    const delay = 800 + Math.random() * 800;
-    await new Promise((r) => setTimeout(r, delay));
-
-    try {
-      const responseText = await generateAiResponseExtended(text);
-      const aiMsg: Message = {
+      const userMsg: Message = {
         id: mkId(),
-        role: "ai",
-        content: responseText.text,
-        metadata: responseText.metadata,
+        role: "user",
+        content: text.trim(),
         timestamp: new Date(),
       };
-      setMessages((prev) => [...prev, aiMsg]);
-    } catch (error) {
-      console.error("[Chat] Error generating AI response:", error);
-      const errMsg: Message = {
-        id: mkId(),
+
+      const aiMsgId = mkId();
+      const aiMsgPlaceholder: Message = {
+        id: aiMsgId,
         role: "ai",
-        content: "Maaf, sepertinya aku sedang mengalami gangguan. Coba lagi nanti ya.",
+        content: "",
         timestamp: new Date(),
       };
-      setMessages((prev) => [...prev, errMsg]);
-    } finally {
-      setIsTyping(false);
-    }
-  }, [isTyping]);
 
-  const confirmTransaction = useCallback(async (messageId: string) => {
-    const msg = messages.find(m => m.id === messageId);
-    if (!msg || msg.metadata?.type !== "transaction_confirmation" || msg.metadata.isApproved) return;
+      setMessages((prev) => [...prev, userMsg, aiMsgPlaceholder]);
+      setIsTyping(true);
 
-    try {
-      const data = msg.metadata.data;
-      
-      const payload = {
-        type: "ADD_TX" as const,
-        data: {
-          type: data.type,
-          amount: data.amount,
-          description: data.description,
-          category: data.category || "Lainnya",
-          walletName: data.walletName
-        }
-      };
+      // Siapkan history untuk konteks obrolan berkelanjutan
+      const historyContext = messages
+        .filter((m) => m.content.trim().length > 0)
+        .map((m) => ({
+          role: m.role === "ai" ? "assistant" : "user",
+          content: m.content,
+        }));
 
-      await dispatchIntent(payload);
+      try {
+        let currentContent = "";
 
-      setMessages((prev) =>
-        prev.map((m) => {
-          if (m.id === messageId && m.metadata) {
-            return {
-              ...m,
-              metadata: {
-                type: "transaction_confirmation" as const,
-                data: m.metadata.data,
-                isApproved: true
-              }
-            };
-          }
-          return m;
-        })
-      );
+        const finalResult = await generateAiResponseStream(
+          text,
+          {
+            onDelta: (chunk) => {
+              currentContent += chunk;
+              setMessages((prev) =>
+                prev.map((m) =>
+                  m.id === aiMsgId ? { ...m, content: currentContent } : m
+                )
+              );
+            },
+          },
+          historyContext
+        );
 
-      const sysMsg: Message = {
-        id: mkId(),
-        role: "ai",
-        content: `Transaksi "${data.description}" sebesar ${new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", minimumFractionDigits: 0 }).format(data.amount)} berhasil dicatat ke dompet ${data.walletName || "Kas"}!`,
-        timestamp: new Date(),
-      };
-      setMessages((prev) => [...prev, sysMsg]);
-    } catch (err: any) {
-      console.error("[Chat] Confirm transaction failed:", err);
-      const errMsg: Message = {
-        id: mkId(),
-        role: "ai",
-        content: `Gagal mencatat transaksi: ${err.message || err}`,
-        timestamp: new Date(),
-      };
-      setMessages((prev) => [...prev, errMsg]);
-    }
-  }, [messages]);
+        setMessages((prev) =>
+          prev.map((m) =>
+            m.id === aiMsgId
+              ? {
+                  ...m,
+                  content: finalResult.text || currentContent,
+                  metadata: finalResult.metadata,
+                }
+              : m
+          )
+        );
+      } catch (error) {
+        console.error("[Chat] Error streaming AI response:", error);
+        setMessages((prev) =>
+          prev.map((m) =>
+            m.id === aiMsgId
+              ? {
+                  ...m,
+                  content:
+                    "Maaf, sepertinya aku sedang mengalami gangguan. Coba lagi nanti ya.",
+                }
+              : m
+          )
+        );
+      } finally {
+        setIsTyping(false);
+      }
+    },
+    [isTyping, messages]
+  );
+
+  const confirmTransaction = useCallback(
+    async (messageId: string) => {
+      const msg = messages.find((m) => m.id === messageId);
+      if (!msg || msg.metadata?.type !== "transaction_confirmation" || msg.metadata.isApproved) return;
+
+      try {
+        const data = msg.metadata.data;
+
+        const payload = {
+          type: "ADD_TX" as const,
+          data: {
+            type: data.type,
+            amount: data.amount,
+            description: data.description,
+            category: data.category || "Lainnya",
+            walletName: data.walletName,
+          },
+        };
+
+        await dispatchIntent(payload);
+
+        setMessages((prev) =>
+          prev.map((m) => {
+            if (m.id === messageId && m.metadata) {
+              return {
+                ...m,
+                metadata: {
+                  type: "transaction_confirmation" as const,
+                  data: m.metadata.data,
+                  isApproved: true,
+                },
+              };
+            }
+            return m;
+          })
+        );
+
+        const sysMsg: Message = {
+          id: mkId(),
+          role: "ai",
+          content: `Transaksi "${data.description}" sebesar ${new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", minimumFractionDigits: 0 }).format(data.amount)} berhasil dicatat ke dompet ${data.walletName || "Kas"}!`,
+          timestamp: new Date(),
+        };
+        setMessages((prev) => [...prev, sysMsg]);
+      } catch (err: any) {
+        console.error("[Chat] Confirm transaction failed:", err);
+        const errMsg: Message = {
+          id: mkId(),
+          role: "ai",
+          content: `Gagal mencatat transaksi: ${err.message || err}`,
+          timestamp: new Date(),
+        };
+        setMessages((prev) => [...prev, errMsg]);
+      }
+    },
+    [messages]
+  );
 
   const cancelTransaction = useCallback((messageId: string) => {
     setMessages((prev) =>

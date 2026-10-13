@@ -21,14 +21,15 @@ import {
 } from "@/components/molecules";
 import { 
   DataManagementSection, 
-  BackupRestoreSection 
+  BackupRestoreSection,
+  AiSettingsSection,
 } from "@/components/organisms";
 import { MainPageTemplate } from "@/components/templates";
 
 // ─── SettingsScreen ───────────────────────────────────────────────────────────
 
 export function SettingsScreen() {
-  const { user, logout, isCloudConnected } = useAuth();
+  const { user, logout } = useAuth();
   const { wallets, addWallet, updateWallet, removeWallet } = useWallets();
   const navigate = useNavigate();
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -186,6 +187,9 @@ export function SettingsScreen() {
           onBudgetsClick={() => navigate("/settings/budgets")}
         />
 
+        {/* AI Configuration Section */}
+        <AiSettingsSection />
+
         {/* Backup & Restore Section */}
         <BackupRestoreSection 
           onExport={handleExport}
@@ -246,9 +250,9 @@ export function SettingsScreen() {
 
       <ConfirmModal
         open={logoutConfirmOpen}
-        title="Logout & Reset"
-        message={isCloudConnected ? "Anda akan logout dari akun cloud dan menghapus semua data lokal. Pastikan sudah melakukan backup jika perlu." : "Anda akan menghapus semua data lokal. Pastikan sudah melakukan backup jika perlu."}
-        confirmLabel="Ya, Logout"
+        title="Reset Profil"
+        message="Anda akan mereset profil dan menghapus semua data lokal. Pastikan sudah melakukan ekspor data jika diperlukan."
+        confirmLabel="Ya, Reset"
         cancelLabel="Batal"
         variant="warning"
         onConfirm={handleLogoutConfirm}

@@ -56,9 +56,7 @@ export function OnboardingForm({
       </BrutalButton>
 
       <p className="text-center text-[11px] font-medium text-brutal-black/50">
-        Data disimpan secara lokal di perangkatmu.
-        <br />
-        Login dengan Google untuk sinkronisasi antar perangkat.
+        Data disimpan secara lokal di perangkatmu (offline-first).
       </p>
     </div>
   );

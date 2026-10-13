@@ -1,10 +1,64 @@
 import { useEffect, useRef, useState } from "react";
 import { BrutalButton } from "@/components/atoms/BrutalButton";
-import { Camera, X,   RefreshCw } from "lucide-react";
+import { Camera, X, RefreshCw, Image as ImageIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
-import { CONFIG } from "@/config";
-import { apiClient } from "@/lib/apiClient";
+import { getAiConfig, scanReceiptWithBackend } from "@/lib/aiConfig";
+
+// Kompres canvas image source (frame video / img) ke JPEG terkompresi
+function compressImageSource(
+  source: CanvasImageSource,
+  sourceWidth: number,
+  sourceHeight: number,
+  maxDimension = 1280,
+  quality = 0.7
+): string {
+  // ponytail: kalkulasi rasio aspek proporsional; naikkan maxDimension jika teks nota mikro buram
+  let width = sourceWidth;
+  let height = sourceHeight;
+
+  if (width > maxDimension || height > maxDimension) {
+    if (width > height) {
+      height = Math.round((height * maxDimension) / width);
+      width = maxDimension;
+    } else {
+      width = Math.round((width * maxDimension) / height);
+      height = maxDimension;
+    }
+  }
+
+  const canvas = document.createElement("canvas");
+  canvas.width = width;
+  canvas.height = height;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) throw new Error("Gagal menginisialisasi context canvas.");
+
+  ctx.drawImage(source, 0, 0, width, height);
+  return canvas.toDataURL("image/jpeg", quality);
+}
+
+// Baca file gambar dari galeri lalu kompres ke base64 JPEG
+function compressImageFile(file: File): Promise<string> {
+  // ponytail: pembacaan gambar native web; gunakan createImageBitmap jika memindahkan ke web worker
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const img = new window.Image();
+      img.onload = () => {
+        try {
+          const compressed = compressImageSource(img, img.naturalWidth, img.naturalHeight);
+          resolve(compressed);
+        } catch (err) {
+          reject(err);
+        }
+      };
+      img.onerror = () => reject(new Error("Gagal membaca file gambar."));
+      img.src = e.target?.result as string;
+    };
+    reader.onerror = () => reject(new Error("Gagal membuka file."));
+    reader.readAsDataURL(file);
+  });
+}
 
 interface ScannerOverlayProps {
   onClose: () => void;
@@ -14,7 +68,7 @@ interface ScannerOverlayProps {
 
 export function ScannerOverlay({ onClose, onResult, localCategories }: ScannerOverlayProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
-  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [stream, setStream] = useState<MediaStream | null>(null);
   const [isCapturing, setIsCapturing] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -48,68 +102,90 @@ export function ScannerOverlay({ onClose, onResult, localCategories }: ScannerOv
     };
   }, []);
 
-async function handleCapture() {
-  if (!stream || !videoRef.current || isProcessing) return;
-
-  setIsCapturing(true);
-  setIsProcessing(true);
-
-  // Simulate "Camera Flash" effect
-  setTimeout(() => setIsCapturing(false), 150);
-
-  try {
-    const canvas = canvasRef.current;
-    const video = videoRef.current;
-    if (!canvas) throw new Error("Canvas not found");
-
-    canvas.width = video.videoWidth;
-    canvas.height = video.videoHeight;
-    const ctx = canvas.getContext("2d");
-    if (!ctx) throw new Error("Context not found");
-
-    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-
-    const blob = await new Promise<Blob | null>((resolve) =>
-      canvas.toBlob((b) => resolve(b), "image/jpeg", 0.8)
-    );
-
-    if (!blob) throw new Error("Failed to capture image");
-
-    const formData = new FormData();
-    formData.append("image", blob, "receipt.jpg");
-    
-    const categoriesArray = localCategories.split(",").map(c => c.trim()).filter(Boolean);
-    formData.append("local_categories", JSON.stringify(categoriesArray));
-
-    const result = await apiClient.post(CONFIG.ENDPOINTS.AI_SCAN, formData);
-    
-    // PERUBAHAN DI SINI:
-    // AI sekarang mengembalikan properti 'success' di dalam JSON-nya.
-    // Jika success === true, lempar data ke onResult.
-    if (result.success) {
-      onResult(result.data); // result langsung berisi amount, description, dll.
-      toast.success("Nota berhasil dipindai!");
-    } else {
-      // Jika AI mengembalikan success: false, ambil pesan 'error' spesifik dari AI
-      // Contoh: "Gambar terlalu blur" atau "Bukan gambar nota"
-      throw new Error(result.error || "Gagal menganalisis nota.");
+  // Eksekusi pemindaian gambar terkompresi ke backend AI
+  async function processScan(base64Image: string) {
+    const aiConfig = getAiConfig();
+    if (!aiConfig.enabled || !aiConfig.apiKey.trim()) {
+      toast.error("Fitur scanner dinonaktifkan. Aktifkan dan isi API Key di Pengaturan.");
+      return;
     }
 
-  } catch (err) {
-    console.error("Scanning error:", err);
-    // Menampilkan pesan error dinamis dari catch (bisa dari API atau error buatan sendiri)
-    const errorMessage = err instanceof Error ? err.message : "Gagal menganalisis nota. Coba lagi.";
-    toast.error(errorMessage);
-  } finally {
-    // Memastikan loading di-reset baik ketika sukses maupun gagal
-    setIsProcessing(false);
-    setIsCapturing(false);
+    setIsProcessing(true);
+
+    try {
+      const today = new Date().toISOString().split("T")[0];
+      const result = await scanReceiptWithBackend({
+        image: base64Image,
+        categories: localCategories,
+        date: today,
+      });
+
+      if (result.success && result.data) {
+        onResult(result.data);
+        toast.success("Nota berhasil dipindai!");
+      } else {
+        throw new Error(result.error || "Gagal menganalisis nota.");
+      }
+    } catch (err) {
+      console.error("Scanning error:", err);
+      const errorMessage = err instanceof Error ? err.message : "Gagal menganalisis nota. Coba lagi.";
+      toast.error(errorMessage);
+    } finally {
+      setIsProcessing(false);
+      setIsCapturing(false);
+    }
   }
-}
+
+  // Tangani penangkapan frame video kamera
+  async function handleCapture() {
+    if (!stream || !videoRef.current || isProcessing) return;
+
+    setIsCapturing(true);
+    setTimeout(() => setIsCapturing(false), 150);
+
+    try {
+      const video = videoRef.current;
+      const base64Image = compressImageSource(
+        video,
+        video.videoWidth || 1280,
+        video.videoHeight || 720
+      );
+      await processScan(base64Image);
+    } catch (err) {
+      console.error("Capture compression error:", err);
+      toast.error("Gagal memproses gambar kamera.");
+      setIsCapturing(false);
+    }
+  }
+
+  // Tangani upload gambar nota dari berkas galeri
+  async function handleFileUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    try {
+      setIsProcessing(true);
+      const compressedImage = await compressImageFile(file);
+      await processScan(compressedImage);
+    } catch (err) {
+      console.error("Upload compression error:", err);
+      toast.error("Gagal mengompres gambar yang diunggah.");
+      setIsProcessing(false);
+    } finally {
+      e.target.value = "";
+    }
+  }
 
   return (
     <div className="fixed inset-0 z-[100] bg-brutal-black flex flex-col overflow-hidden">
-      <canvas ref={canvasRef} className="hidden" />
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/*"
+        className="hidden"
+        onChange={handleFileUpload}
+      />
+
       {/* ── Top Bar ── */}
       <div className="flex items-center justify-between px-6 py-4 z-10 bg-brutal-black border-b-4 border-white">
         <span className="text-white font-black uppercase tracking-wider text-sm">Pindai Nota Struk</span>
@@ -183,11 +259,24 @@ async function handleCapture() {
       {/* ── Bottom Bar ── */}
       <div className="px-6 py-8 bg-brutal-black border-t-4 border-white flex flex-col items-center gap-6">
         <p className="text-white/80 text-xs font-black uppercase tracking-widest text-center">
-          Posisikan Nota / Struk di dalam bingkai
+          Posisikan Nota di bingkai atau unggah foto
         </p>
 
-        <div className="flex items-center">
+        <div className="flex items-center gap-6">
+          {/* Tombol Unggah Galeri */}
           <button
+            type="button"
+            onClick={() => fileInputRef.current?.click()}
+            disabled={isProcessing}
+            title="Unggah dari Galeri"
+            className="h-14 w-14 rounded-full border-2 border-white bg-brutal-black flex items-center justify-center text-white brutal-press shadow-[2px_2px_0px_#fff] disabled:opacity-50"
+          >
+            <ImageIcon size={24} strokeWidth={2.5} />
+          </button>
+
+          {/* Tombol Shutter Kamera */}
+          <button
+            type="button"
             onClick={handleCapture}
             disabled={isProcessing || hasError}
             className={cn(
@@ -199,6 +288,9 @@ async function handleCapture() {
               <Camera size={32} strokeWidth={2.5} className="text-brutal-black" />
             </div>
           </button>
+
+          {/* Penyeimbang tata letak */}
+          <div className="w-14" />
         </div>
       </div>
     </div>

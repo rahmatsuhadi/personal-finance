@@ -10,6 +10,7 @@ import {
 } from "@/components/organisms";
 import { ScannerOverlay } from "@/components/molecules";
 import { FormPageTemplate } from "@/components/templates";
+import { getAiConfig } from "@/lib/aiConfig";
 
 import { cn, formatIDR, formatRupiah } from "@/lib/utils";
 import { useAddTransactionForm, type TxType } from "@/hooks/useAddTransactionForm";
@@ -62,6 +63,8 @@ const COLOR_HEX: Record<string, string> = {
 export function AddTransactionScreen() {
   const form = useAddTransactionForm();
   const navigate = useNavigate();
+  const aiConfig = getAiConfig();
+  const isScannerAvailable = aiConfig.enabled && Boolean(aiConfig.apiKey.trim());
   
   const activeTab = TAB_CONFIG.find((t) => t.type === form.activeType) || TAB_CONFIG[1];
 
@@ -81,13 +84,15 @@ export function AddTransactionScreen() {
       title="Tambah Transaksi"
       onBack={() => navigate(-1)}
       headerAction={
-        <button
-          onClick={() => form.setScannerOpen(true)}
-          className="flex h-10 w-10 items-center justify-center border-2 border-brutal-lime bg-transparent text-brutal-lime brutal-press"
-          aria-label="Buka scanner AI"
-        >
-          <Maximize size={20} strokeWidth={2.5} />
-        </button>
+        isScannerAvailable ? (
+          <button
+            onClick={() => form.setScannerOpen(true)}
+            className="flex h-10 w-10 items-center justify-center border-2 border-brutal-lime bg-transparent text-brutal-lime brutal-press"
+            aria-label="Buka scanner AI"
+          >
+            <Maximize size={20} strokeWidth={2.5} />
+          </button>
+        ) : undefined
       }
     >
       {/* ── Type Tabs ───────────────────────────────────────────────────────── */}

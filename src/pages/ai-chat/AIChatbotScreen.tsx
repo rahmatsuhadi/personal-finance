@@ -3,7 +3,6 @@ import { AppHeader } from "@/components/atoms/AppHeader";
 import { cn } from "@/lib/utils";
 
 import MessageBubble from "@/components/molecules/chat-ai/MessageBubble";
-import TypingIndicator from "@/components/molecules/chat-ai/TypingIndicator";
 import { ChatInputBar } from "@/components/molecules/chat-ai/ChatInputBar";
 
 import { useChatHistory } from "@/hooks/useChatHistory";
@@ -47,8 +46,6 @@ export function AIChatbotScreen() {
             onEdit={handleEdit}
           />
         ))}
-
-        {chat.isTyping && <TypingIndicator />}
 
         <div ref={chat.bottomRef} />
       </div>

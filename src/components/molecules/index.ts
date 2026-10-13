@@ -10,6 +10,3 @@ export * from "./wallets/AddWalletModal";
 export * from "./wallets/TotalBalanceCard";
 export * from "./categories/CategoryFormModal";
 export * from "./settings/ProfileCard";
-export { default as CloudSyncButton } from "./settings/CloudSyncButton";
-export { default as CloudSyncActionCard } from "./settings/CloudSyncActionCard";
-export * from "./auth/GoogleLoginButton";

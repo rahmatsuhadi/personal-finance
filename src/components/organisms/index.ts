@@ -5,6 +5,7 @@ export * from "./transactions/CategoryPicker";
 export * from "./transactions/ItemDetails";
 export * from "./calendar/CalendarDayDrawer";
 export * from "./settings/SettingsSections";
+export * from "./settings/AiSettingsSection";
 export * from "./categories/CategoryChartSection";
 export * from "./wallets/WalletHorizontalList";
 export * from "./auth/OnboardingHeader";

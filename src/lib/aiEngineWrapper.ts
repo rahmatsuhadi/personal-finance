@@ -3,103 +3,171 @@ import type { AiResponseResult } from "@/types";
 import { parseTransactionQuery } from "@/utils/aiParser";
 import { generateResponse } from "@/utils/localParser";
 import { getLowTokenSnapshot, getWeeklyExpenseAggregate } from "@/lib/ai/contextAggregator";
-import { apiClient } from "@/lib/apiClient";
-import { CONFIG } from "@/config";
+import { getAiConfig, sendBackendChat } from "@/lib/aiConfig";
+import { streamBackendChat, type StreamEventCallbacks } from "@/lib/ai/streamEngine";
 
-export async function generateAiResponseExtended(query: string): Promise<AiResponseResult> {
-    // 1. Cek format pencatatan transaksi lokal (Struktur Regex)
-    const parsed = await parseTransactionQuery(query);
-    if (parsed && parsed.amount > 0) {
-        return {
-            text: `Aku mendeteksi kamu ingin mencatat transaksi baru. Harap konfirmasi detail di bawah ini ya!`,
-            metadata: {
+// Eksekusi streaming chat dengan fallback offline-first
+export async function generateAiResponseStream(
+  query: string,
+  callbacks: StreamEventCallbacks,
+  history: Array<{ role: string; content?: string | null }> = []
+): Promise<AiResponseResult> {
+  // 1. Cek format pencatatan transaksi lokal (Struktur Regex)
+  const parsed = await parseTransactionQuery(query);
+  if (parsed && parsed.amount > 0) {
+    const text = "Aku mendeteksi kamu ingin mencatat transaksi baru. Harap konfirmasi detail di bawah ini ya!";
+    callbacks.onDelta?.(text);
+    return {
+      text,
+      metadata: {
+        type: "transaction_confirmation",
+        data: parsed,
+        isApproved: false,
+      },
+    };
+  }
+
+  // 2. Cek kecocokan rules teks lokal (Saldo, Pengeluaran, dll)
+  const localText = await generateResponse(query);
+  if (localText !== "__LOCAL_FALLBACK__") {
+    callbacks.onDelta?.(localText);
+    return { text: localText };
+  }
+
+  // 3. Cek apakah integrasi backend AI aktif
+  const aiConfig = getAiConfig();
+  if (!aiConfig.enabled || !aiConfig.apiKey.trim()) {
+    const notice =
+      "⚠️ Mode AI saat ini terbatas (hanya perintah dasar lokal). Aktifkan integrasi dan masukkan API Key di menu Pengaturan untuk membuka kemampuan analitis Fin secara penuh.";
+    callbacks.onDelta?.(notice);
+    return { text: notice };
+  }
+
+  // 4. Stream ke backend dengan native SSE & tool execution
+  try {
+    const userProfile = await db.user_profile.get(1);
+    const localUserName = userProfile?.name || "User";
+    const localFinancialContext = await getLowTokenSnapshot();
+
+    let confirmationMetadata: any = undefined;
+
+    const streamResult = await streamBackendChat(
+      {
+        message: query,
+        userName: localUserName,
+        financialContext: localFinancialContext as unknown as Record<string, unknown>,
+        history,
+      },
+      {
+        onDelta: callbacks.onDelta,
+        onToolCall: (tc) => {
+          callbacks.onToolCall?.(tc);
+          if (tc.name === "prepareTransaction") {
+            try {
+              const parsedArgs = JSON.parse(tc.arguments);
+              confirmationMetadata = {
                 type: "transaction_confirmation",
-                data: parsed,
-                isApproved: false
+                data: {
+                  type: parsedArgs.type || "expense",
+                  amount: Number(parsedArgs.amount) || 0,
+                  description: parsedArgs.description || "Transaksi",
+                  category: parsedArgs.category || "Lainnya",
+                  walletName: parsedArgs.walletName || parsedArgs.fromWalletName || "",
+                },
+                isApproved: false,
+              };
+            } catch {
+              // Abaikan jika argument parsing gagal
             }
-        };
+          }
+        },
+      }
+    );
+
+    let finalText = streamResult.text;
+    if (!finalText && confirmationMetadata) {
+      finalText = `Aku mendeteksi kamu ingin mencatat transaksi baru: "${confirmationMetadata.data.description}". Apakah detail ini sudah sesuai?`;
+      callbacks.onDelta?.(finalText);
     }
 
-    // 2. Cek kecocokan rules teks lokal (Saldo, Pengeluaran, dll)
-    const localText = await generateResponse(query);
-    if (localText !== "__LOCAL_FALLBACK__") {
-        return { text: localText };
+    return {
+      text: finalText,
+      metadata: confirmationMetadata,
+    };
+  } catch (error) {
+    console.error("Stream Backend Chat Failed:", error);
+    const errMsg = error instanceof Error ? error.message : "Terjadi kesalahan saat memanggil AI.";
+    const failText = `🤔 Fin mengalami kendala saat streaming AI: ${errMsg}`;
+    callbacks.onDelta?.(failText);
+    return { text: failText };
+  }
+}
+
+// Proses query user batch (non-streaming fallback)
+export async function generateAiResponseExtended(query: string): Promise<AiResponseResult> {
+  // 1. Cek format pencatatan transaksi lokal (Struktur Regex)
+  const parsed = await parseTransactionQuery(query);
+  if (parsed && parsed.amount > 0) {
+    return {
+      text: "Aku mendeteksi kamu ingin mencatat transaksi baru. Harap konfirmasi detail di bawah ini ya!",
+      metadata: {
+        type: "transaction_confirmation",
+        data: parsed,
+        isApproved: false,
+      },
+    };
+  }
+
+  // 2. Cek kecocokan rules teks lokal (Saldo, Pengeluaran, dll)
+  const localText = await generateResponse(query);
+  if (localText !== "__LOCAL_FALLBACK__") {
+    return { text: localText };
+  }
+
+  // 3. Cek apakah integrasi backend AI aktif
+  const aiConfig = getAiConfig();
+  if (!aiConfig.enabled || !aiConfig.apiKey.trim()) {
+    return {
+      text: "⚠️ Mode AI saat ini terbatas (hanya perintah dasar lokal). Aktifkan integrasi dan masukkan API Key di menu Pengaturan untuk membuka kemampuan analitis Fin secara penuh.",
+    };
+  }
+
+  // 4. Panggil Backend API Persona Finance
+  try {
+    const userProfile = await db.user_profile.get(1);
+    const localUserName = userProfile?.name || "User";
+
+    // Ambil low-token context snapshot
+    const localFinancialContext = await getLowTokenSnapshot();
+
+    // Cek jika user menanyakan tentang analisis biaya / boros
+    let additionalContext = {};
+    const lowerQuery = query.toLowerCase();
+    if (
+      lowerQuery.includes("boros") ||
+      lowerQuery.includes("analisis") ||
+      lowerQuery.includes("pengeluaran minggu")
+    ) {
+      additionalContext = {
+        weeklyExpenseAggregate: await getWeeklyExpenseAggregate(),
+      };
     }
 
-    // 3. CLOUD FALLBACK: Kirim ringkasan instan Dexie + chat ke server Gemini
-    try {
-        const userProfile = await db.user_profile.get(1);
-        const localUserName = userProfile?.name || "Guest";
+    const res = await sendBackendChat({
+      message: query,
+      userName: localUserName,
+      financialContext: { ...localFinancialContext, ...additionalContext },
+    });
 
-        // Ambil low-token context snapshot
-        const localFinancialContext = await getLowTokenSnapshot();
-
-        // Cek jika user menanyakan tentang analisis biaya / boros
-        let additionalContext = {};
-        const lowerQuery = query.toLowerCase();
-        if (lowerQuery.includes("boros") || lowerQuery.includes("analisis") || lowerQuery.includes("pengeluaran minggu")) {
-            additionalContext = {
-                weeklyExpenseAggregate: await getWeeklyExpenseAggregate()
-            };
-        }
-
-        // System prompt dioptimalkan dengan Constraint-based Prompting
-        const systemInstruction = 
-          `You are Fin, a helpful financial assistant. Today is ${localFinancialContext.currentDate}. ` +
-          "Constraint Guidelines:\n" +
-          "- If the user asks to record/add a transaction, reply ONLY with a JSON object of type ADD_TX. Do not include any conversational text. Format:\n" +
-          "  {\"type\": \"ADD_TX\", \"data\": {\"type\": \"income\"|\"expense\"|\"transfer\", \"amount\": number, \"description\": \"...\", \"category\": \"...\", \"walletName\": \"...\"}}\n" +
-          "- If the user asks to analyze their financial data, answer in at most 3 sentences based on the provided local context.\n" +
-          "- Keep all responses extremely concise to minimize token usage.";
-
-        const result = await apiClient.post(CONFIG.ENDPOINTS.AI_CHAT, {
-            message: query,
-            userName: localUserName,
-            systemInstruction,
-            context: {
-                ...localFinancialContext,
-                ...additionalContext
-            }
-        });
-
-        // Backend response format: result.data.content or result.text
-        const textResponse = result.data?.content || result.text || "";
-        
-        // Coba parsing jika AI mengembalikan JSON ADD_TX
-        try {
-            const cleanText = textResponse.trim();
-            if (cleanText.startsWith("{") && cleanText.endsWith("}")) {
-                const parsedJson = JSON.parse(cleanText);
-                if (parsedJson.type === "ADD_TX") {
-                    return {
-                        text: `Aku mendeteksi kamu ingin mencatat transaksi baru: "${parsedJson.data.description || "Transaksi"}". Apakah detail ini sudah sesuai?`,
-                        metadata: {
-                            type: "transaction_confirmation",
-                            data: {
-                                type: parsedJson.data.type || "expense",
-                                amount: parsedJson.data.amount || 0,
-                                description: parsedJson.data.description || "",
-                                category: parsedJson.data.category || "Lainnya",
-                                walletName: parsedJson.data.walletName || parsedJson.data.fromWalletName || ""
-                            },
-                            isApproved: false
-                        }
-                    };
-                }
-            }
-        } catch (e) {
-            console.warn("Response was not JSON or parsing failed:", e);
-        }
-
-        return {
-            text: textResponse,
-            metadata: result.metadata
-        };
-
-    } catch (error) {
-        console.error("Cloud Fallback Failed:", error);
-        return {
-            text: `🤔 Hmm, Fin belum memahami pertanyaan tersebut karena kamu sedang offline atau server sedang tidak terjangkau. Jika ingin menganalisis mendalam atau memperbaiki transaksi, pastikan kamu terhubung ke internet ya!\n\nKamu tetap bisa tanya info lokal seperti: "Total saldo dompetku" atau "Transaksi hari ini".`
-        };
-    }
+    return {
+      text: res.text,
+      metadata: res.metadata,
+    };
+  } catch (error) {
+    console.error("Backend Chat API Failed:", error);
+    const errMsg = error instanceof Error ? error.message : "Terjadi kesalahan saat memanggil AI.";
+    return {
+      text: `🤔 Fin mengalami kendala saat menghubungi AI: ${errMsg}\n\nPastikan API Key di Pengaturan sudah tepat dan backend server sedang berjalan.`,
+    };
+  }
 }

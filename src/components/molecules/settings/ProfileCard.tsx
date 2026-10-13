@@ -34,7 +34,7 @@ export function ProfileCard({ name, onLogout, className }: ProfileCardProps) {
             className="flex items-center gap-2"
           >
             <LogOut size={14} strokeWidth={2.5} />
-            Logout / Reset Profil
+            Reset Profil
           </BrutalButton>
         </div>
       </div>

@@ -51,7 +51,11 @@ export default function MessageBubble({ msg, onConfirm, onCancel, onEdit }: Mess
             : "bg-brutal-white shadow-brutal-sm text-brutal-black"
         )}
       >
-        {renderContent(msg.content)}
+        {msg.content ? (
+          renderContent(msg.content)
+        ) : (
+          <span className="inline-block w-2 h-4 bg-brutal-black animate-pulse align-middle" />
+        )}
 
         {msg.metadata?.type === "transaction_confirmation" && (
           <TxConfirmCard
