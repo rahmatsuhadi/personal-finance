@@ -54,7 +54,11 @@ export default function MessageBubble({ msg, onConfirm, onCancel, onEdit }: Mess
         {msg.content ? (
           renderContent(msg.content)
         ) : (
-          <span className="inline-block w-2 h-4 bg-brutal-black animate-pulse align-middle" />
+          <div className="flex items-center gap-1.5 py-1.5" aria-label="Luna sedang mengetik">
+            <div className="h-2.5 w-2.5 border border-brutal-black bg-brutal-black animate-brutal-box-1" />
+            <div className="h-2.5 w-2.5 border border-brutal-black bg-brutal-black animate-brutal-box-2" />
+            <div className="h-2.5 w-2.5 border border-brutal-black bg-brutal-black animate-brutal-box-3" />
+          </div>
         )}
 
         {msg.metadata?.type === "transaction_confirmation" && (

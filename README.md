@@ -58,7 +58,7 @@ finance-m/
 │   ├── db/
 │   │   └── db.ts              # Skema IndexedDB (Dexie) & data benih (seed)
 │   ├── hooks/                 # State management & React Custom Hooks
-│   │   ├── useChatHistory.ts  # Logika percakapan asisten Fin
+│   │   ├── useChatHistory.ts  # Logika percakapan asisten
 │   │   ├── useWallets.ts      # Logika manajemen dompet & saldo
 │   │   └── useTransactions.ts # Logika rekam/sunting transaksi lokal
 │   ├── lib/

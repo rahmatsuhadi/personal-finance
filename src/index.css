@@ -239,4 +239,97 @@
   .no-scrollbar::-webkit-scrollbar {
     display: none;
   }
+
+  /* ─── Mascot Animations ─────────────────────────────────────────────── */
+  @keyframes mascot-blink {
+    0%, 88%, 100% {
+      transform: scaleY(1);
+    }
+    93% {
+      transform: scaleY(0.12);
+    }
+  }
+
+  @keyframes mascot-bob {
+    0%, 100% {
+      transform: translateY(0);
+    }
+    50% {
+      transform: translateY(-2px);
+    }
+  }
+
+  @keyframes mascot-look {
+    0%, 100% {
+      transform: translateX(0);
+    }
+    25% {
+      transform: translateX(-1.5px);
+    }
+    75% {
+      transform: translateX(1.5px);
+    }
+  }
+
+  .animate-mascot-blink {
+    animation: mascot-blink 3.8s ease-in-out infinite;
+  }
+
+  .animate-mascot-bob {
+    animation: mascot-bob 0.8s ease-in-out infinite;
+  }
+
+  .animate-mascot-look {
+    animation: mascot-look 1s ease-in-out infinite;
+  }
+
+  /* ─── Brutal Step Loading Animation (1 -> 2 -> 3 boxes) ───────────────────── */
+  @keyframes brutal-box-step-1 {
+    0%, 100% {
+      opacity: 1;
+      transform: scale(1);
+    }
+  }
+
+  @keyframes brutal-box-step-2 {
+    0%, 25% {
+      opacity: 0.15;
+      transform: scale(0.7);
+    }
+    30%, 85% {
+      opacity: 1;
+      transform: scale(1);
+    }
+    90%, 100% {
+      opacity: 0.15;
+      transform: scale(0.7);
+    }
+  }
+
+  @keyframes brutal-box-step-3 {
+    0%, 55% {
+      opacity: 0.15;
+      transform: scale(0.7);
+    }
+    60%, 85% {
+      opacity: 1;
+      transform: scale(1);
+    }
+    90%, 100% {
+      opacity: 0.15;
+      transform: scale(0.7);
+    }
+  }
+
+  .animate-brutal-box-1 {
+    animation: brutal-box-step-1 1.2s ease-in-out infinite;
+  }
+
+  .animate-brutal-box-2 {
+    animation: brutal-box-step-2 1.2s ease-in-out infinite;
+  }
+
+  .animate-brutal-box-3 {
+    animation: brutal-box-step-3 1.2s ease-in-out infinite;
+  }
 }

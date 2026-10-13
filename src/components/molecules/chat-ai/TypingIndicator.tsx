@@ -7,15 +7,9 @@ export default function TypingIndicator() {
         <Bot size={14} strokeWidth={2.5} className="text-white" />
       </div>
       <div className="border-2 border-brutal-black bg-brutal-white px-4 py-3 shadow-brutal-sm flex items-center gap-1.5">
-        {[0, 1, 2].map((i) => (
-          <div
-            key={i}
-            className="h-2 w-2 bg-brutal-purple border border-brutal-black"
-            style={{
-              animation: `bounce 1.2s ease-in-out ${i * 0.2}s infinite`,
-            }}
-          />
-        ))}
+        <div className="h-2 w-2 bg-brutal-purple border border-brutal-black animate-brutal-box-1" />
+        <div className="h-2 w-2 bg-brutal-purple border border-brutal-black animate-brutal-box-2" />
+        <div className="h-2 w-2 bg-brutal-purple border border-brutal-black animate-brutal-box-3" />
       </div>
     </div>
   );

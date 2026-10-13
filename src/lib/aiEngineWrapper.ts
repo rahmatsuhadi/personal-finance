@@ -38,7 +38,7 @@ export async function generateAiResponseStream(
   const aiConfig = getAiConfig();
   if (!aiConfig.enabled || !aiConfig.apiKey.trim()) {
     const notice =
-      "⚠️ Mode AI saat ini terbatas (hanya perintah dasar lokal). Aktifkan integrasi dan masukkan API Key di menu Pengaturan untuk membuka kemampuan analitis Fin secara penuh.";
+      "⚠️ Mode AI saat ini terbatas (hanya perintah dasar lokal). Aktifkan integrasi dan masukkan API Key di menu Pengaturan untuk membuka kemampuan analitis Luna secara penuh.";
     callbacks.onDelta?.(notice);
     return { text: notice };
   }
@@ -97,7 +97,7 @@ export async function generateAiResponseStream(
   } catch (error) {
     console.error("Stream Backend Chat Failed:", error);
     const errMsg = error instanceof Error ? error.message : "Terjadi kesalahan saat memanggil AI.";
-    const failText = `🤔 Fin mengalami kendala saat streaming AI: ${errMsg}`;
+    const failText = `🤔 Luna mengalami kendala saat streaming AI: ${errMsg}`;
     callbacks.onDelta?.(failText);
     return { text: failText };
   }
@@ -128,7 +128,7 @@ export async function generateAiResponseExtended(query: string): Promise<AiRespo
   const aiConfig = getAiConfig();
   if (!aiConfig.enabled || !aiConfig.apiKey.trim()) {
     return {
-      text: "⚠️ Mode AI saat ini terbatas (hanya perintah dasar lokal). Aktifkan integrasi dan masukkan API Key di menu Pengaturan untuk membuka kemampuan analitis Fin secara penuh.",
+      text: "⚠️ Mode AI saat ini terbatas (hanya perintah dasar lokal). Aktifkan integrasi dan masukkan API Key di menu Pengaturan untuk membuka kemampuan analitis Luna secara penuh.",
     };
   }
 
@@ -167,7 +167,7 @@ export async function generateAiResponseExtended(query: string): Promise<AiRespo
     console.error("Backend Chat API Failed:", error);
     const errMsg = error instanceof Error ? error.message : "Terjadi kesalahan saat memanggil AI.";
     return {
-      text: `🤔 Fin mengalami kendala saat menghubungi AI: ${errMsg}\n\nPastikan API Key di Pengaturan sudah tepat dan backend server sedang berjalan.`,
+      text: `🤔 Luna mengalami kendala saat menghubungi AI: ${errMsg}\n\nPastikan API Key di Pengaturan sudah tepat dan backend server sedang berjalan.`,
     };
   }
 }

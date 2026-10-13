@@ -9,3 +9,4 @@ export * from "./SmallIconButton";
 export * from "./StatusIndicator";
 export * from "./FeaturePill";
 export * from "./EmptyState";
+export * from "./Mascot";
