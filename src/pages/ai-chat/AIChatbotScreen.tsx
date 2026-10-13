@@ -67,10 +67,11 @@ export function AIChatbotScreen() {
 
       {/* Messages */}
       <div className="flex-1 overflow-y-auto py-4 space-y-4">
-        {chat.messages.map((msg) => (
+        {chat.messages.map((msg, index) => (
           <MessageBubble
             key={msg.id}
             msg={msg}
+            isTyping={chat.isTyping && index === chat.messages.length - 1}
             onConfirm={chat.confirmTransaction}
             onCancel={chat.cancelTransaction}
             onEdit={handleEdit}

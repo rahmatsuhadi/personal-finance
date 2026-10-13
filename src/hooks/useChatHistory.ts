@@ -77,7 +77,11 @@ export function useChatHistory() {
             m.id === aiMsgId
               ? {
                   ...m,
-                  content: finalResult.text || currentContent,
+                  // Hindari bubble kosong tersisa setelah request selesai
+                  content:
+                    finalResult.text ||
+                    currentContent ||
+                    "Maaf, Luna belum bisa menjawab pertanyaan tersebut.",
                   metadata: finalResult.metadata,
                 }
               : m

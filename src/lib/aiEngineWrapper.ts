@@ -88,6 +88,10 @@ export async function generateAiResponseStream(
     if (!finalText && confirmationMetadata) {
       finalText = `Aku mendeteksi kamu ingin mencatat transaksi baru: "${confirmationMetadata.data.description}". Apakah detail ini sudah sesuai?`;
       callbacks.onDelta?.(finalText);
+    } else if (!finalText) {
+      // Fallback bila AI merespons tanpa payload teks
+      finalText = "Maaf, aku tidak menemukan data terkait pertanyaan tersebut.";
+      callbacks.onDelta?.(finalText);
     }
 
     return {

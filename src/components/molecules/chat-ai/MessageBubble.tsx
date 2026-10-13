@@ -6,12 +6,13 @@ import { TxConfirmCard } from "./TxConfirmCard";
 
 interface MessageBubbleProps {
   msg: Message;
+  isTyping?: boolean;
   onConfirm?: (id: string) => void;
   onCancel?: (id: string) => void;
   onEdit?: (tx: ParsedTransaction) => void;
 }
 
-export default function MessageBubble({ msg, onConfirm, onCancel, onEdit }: MessageBubbleProps) {
+export default function MessageBubble({ msg, isTyping, onConfirm, onCancel, onEdit }: MessageBubbleProps) {
   const isUser = msg.role === "user";
 
   const renderContent = (content: string) => {
@@ -53,12 +54,16 @@ export default function MessageBubble({ msg, onConfirm, onCancel, onEdit }: Mess
       >
         {msg.content ? (
           renderContent(msg.content)
-        ) : (
+        ) : isTyping ? (
+          // Animasi kotak mengetik hanya ketika stream/proses masih aktif
           <div className="flex items-center gap-1.5 py-1.5" aria-label="Luna sedang mengetik">
             <div className="h-2.5 w-2.5 border border-brutal-black bg-brutal-black animate-brutal-box-1" />
             <div className="h-2.5 w-2.5 border border-brutal-black bg-brutal-black animate-brutal-box-2" />
             <div className="h-2.5 w-2.5 border border-brutal-black bg-brutal-black animate-brutal-box-3" />
           </div>
+        ) : (
+          // Fallback bila proses selesai tanpa isi
+          <p className="italic text-neutral-500">Tidak ada tanggapan.</p>
         )}
 
         {msg.metadata?.type === "transaction_confirmation" && (
